@@ -6,26 +6,21 @@ public class MyNewGrammar implements MyNewGrammarConstants {
   public static void main(String args []) throws ParseException
   {
     System.out.println("Reading from standard input...");
-    System.out.println("Enter your CL code (Press Ctrl+Z on Windows or Ctrl+D on Mac/Linux, then Enter to finish):");
+    System.out.println("Enter your CL code (Press Ctrl+Z on Windows, or Ctrl+D on Mac/Linux, then Enter to finish):");
 
-    MyNewGrammar parser = new MyNewGrammar(System.in);
-
-    try
-    {
-      parser.Start();
-      System.out.println("OK! Syntax is Correct.");
-    }
-    catch (Exception e)
-    {
-      System.out.println("NOK! Syntax Error.");
-      System.out.println(e.getMessage());
+    try {
+        // Instantiate the parser and call the starting rule
+        MyNewGrammar parser = new MyNewGrammar(System.in);
+        parser.Start();
+        System.out.println("Code parsed successfully! No syntax errors found.");
+    } catch (Exception e) {
+        System.out.println("Oops. " + e.getMessage());
     }
   }
 
-/* --- PARSER RULES (Your Domain) --- */
-
-/* Rule 1: The entire program structure */
-  final public void Start() throws ParseException {
+/* --- PARSER RULES --- */
+  final public 
+void Start() throws ParseException {
     jj_consume_token(START_PROG);
     VariablesBlock();
     CodeBlock();
@@ -33,7 +28,6 @@ public class MyNewGrammar implements MyNewGrammarConstants {
     jj_consume_token(0);
 }
 
-/* Rule 2: The Variables Section */
   final public void VariablesBlock() throws ParseException {
     jj_consume_token(VAR_SECTION);
     label_1:
@@ -51,7 +45,6 @@ public class MyNewGrammar implements MyNewGrammarConstants {
     }
 }
 
-/* Rule 3: Declaring a single variable (e.g., "int x = 5;") */
   final public void Declaration() throws ParseException {
     jj_consume_token(INT);
     jj_consume_token(ID);
@@ -60,12 +53,12 @@ public class MyNewGrammar implements MyNewGrammarConstants {
     jj_consume_token(SEMICOLON);
 }
 
-/* Rule 4: The Code Section */
   final public void CodeBlock() throws ParseException {
     jj_consume_token(CODE_SECTION);
     label_2:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
+      case IF:
       case ID:{
         ;
         break;
@@ -78,12 +71,82 @@ public class MyNewGrammar implements MyNewGrammarConstants {
     }
 }
 
-/* Rule 5: A placeholder for statements (We will add loopif and switchFor here later) */
   final public void Statement() throws ParseException {
+    switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
+    case ID:{
+      Assignment();
+      break;
+      }
+    case IF:{
+      IfStatement();
+      break;
+      }
+    default:
+      jj_la1[2] = jj_gen;
+      jj_consume_token(-1);
+      throw new ParseException();
+    }
+}
+
+  final public void Assignment() throws ParseException {
     jj_consume_token(ID);
     jj_consume_token(ASSIGN);
     jj_consume_token(NUMBER);
     jj_consume_token(SEMICOLON);
+}
+
+  final public void IfStatement() throws ParseException {
+    jj_consume_token(IF);
+    jj_consume_token(LPAREN);
+    Condition();
+    jj_consume_token(RPAREN);
+    jj_consume_token(LBRACE);
+    label_3:
+    while (true) {
+      switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
+      case IF:
+      case ID:{
+        ;
+        break;
+        }
+      default:
+        jj_la1[3] = jj_gen;
+        break label_3;
+      }
+      Statement();
+    }
+    jj_consume_token(RBRACE);
+    switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
+    case ELSE:{
+      jj_consume_token(ELSE);
+      jj_consume_token(LBRACE);
+      label_4:
+      while (true) {
+        switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
+        case IF:
+        case ID:{
+          ;
+          break;
+          }
+        default:
+          jj_la1[4] = jj_gen;
+          break label_4;
+        }
+        Statement();
+      }
+      jj_consume_token(RBRACE);
+      break;
+      }
+    default:
+      jj_la1[5] = jj_gen;
+      ;
+    }
+}
+
+  final public void Condition() throws ParseException {
+    jj_consume_token(ID);
+    jj_consume_token(EQUALS);
+    jj_consume_token(NUMBER);
 }
 
   /** Generated Token Manager. */
@@ -95,13 +158,13 @@ public class MyNewGrammar implements MyNewGrammarConstants {
   public Token jj_nt;
   private int jj_ntk;
   private int jj_gen;
-  final private int[] jj_la1 = new int[2];
+  final private int[] jj_la1 = new int[6];
   static private int[] jj_la1_0;
   static {
 	   jj_la1_init_0();
 	}
 	private static void jj_la1_init_0() {
-	   jj_la1_0 = new int[] {0x200,0x400,};
+	   jj_la1_0 = new int[] {0x200,0x1400,0x1400,0x1400,0x1400,0x800,};
 	}
 
   /** Constructor with InputStream. */
@@ -115,7 +178,7 @@ public class MyNewGrammar implements MyNewGrammarConstants {
 	 token = new Token();
 	 jj_ntk = -1;
 	 jj_gen = 0;
-	 for (int i = 0; i < 2; i++) jj_la1[i] = -1;
+	 for (int i = 0; i < 6; i++) jj_la1[i] = -1;
   }
 
   /** Reinitialise. */
@@ -129,7 +192,7 @@ public class MyNewGrammar implements MyNewGrammarConstants {
 	 token = new Token();
 	 jj_ntk = -1;
 	 jj_gen = 0;
-	 for (int i = 0; i < 2; i++) jj_la1[i] = -1;
+	 for (int i = 0; i < 6; i++) jj_la1[i] = -1;
   }
 
   /** Constructor. */
@@ -139,7 +202,7 @@ public class MyNewGrammar implements MyNewGrammarConstants {
 	 token = new Token();
 	 jj_ntk = -1;
 	 jj_gen = 0;
-	 for (int i = 0; i < 2; i++) jj_la1[i] = -1;
+	 for (int i = 0; i < 6; i++) jj_la1[i] = -1;
   }
 
   /** Reinitialise. */
@@ -157,7 +220,7 @@ public class MyNewGrammar implements MyNewGrammarConstants {
 	 token = new Token();
 	 jj_ntk = -1;
 	 jj_gen = 0;
-	 for (int i = 0; i < 2; i++) jj_la1[i] = -1;
+	 for (int i = 0; i < 6; i++) jj_la1[i] = -1;
   }
 
   /** Constructor with generated Token Manager. */
@@ -166,7 +229,7 @@ public class MyNewGrammar implements MyNewGrammarConstants {
 	 token = new Token();
 	 jj_ntk = -1;
 	 jj_gen = 0;
-	 for (int i = 0; i < 2; i++) jj_la1[i] = -1;
+	 for (int i = 0; i < 6; i++) jj_la1[i] = -1;
   }
 
   /** Reinitialise. */
@@ -175,7 +238,7 @@ public class MyNewGrammar implements MyNewGrammarConstants {
 	 token = new Token();
 	 jj_ntk = -1;
 	 jj_gen = 0;
-	 for (int i = 0; i < 2; i++) jj_la1[i] = -1;
+	 for (int i = 0; i < 6; i++) jj_la1[i] = -1;
   }
 
   private Token jj_consume_token(int kind) throws ParseException {
@@ -226,12 +289,12 @@ public class MyNewGrammar implements MyNewGrammarConstants {
   /** Generate ParseException. */
   public ParseException generateParseException() {
 	 jj_expentries.clear();
-	 boolean[] la1tokens = new boolean[14];
+	 boolean[] la1tokens = new boolean[21];
 	 if (jj_kind >= 0) {
 	   la1tokens[jj_kind] = true;
 	   jj_kind = -1;
 	 }
-	 for (int i = 0; i < 2; i++) {
+	 for (int i = 0; i < 6; i++) {
 	   if (jj_la1[i] == jj_gen) {
 		 for (int j = 0; j < 32; j++) {
 		   if ((jj_la1_0[i] & (1<<j)) != 0) {
@@ -240,7 +303,7 @@ public class MyNewGrammar implements MyNewGrammarConstants {
 		 }
 	   }
 	 }
-	 for (int i = 0; i < 14; i++) {
+	 for (int i = 0; i < 21; i++) {
 	   if (la1tokens[i]) {
 		 jj_expentry = new int[1];
 		 jj_expentry[0] = i;

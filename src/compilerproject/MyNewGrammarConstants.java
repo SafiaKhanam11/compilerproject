@@ -21,13 +21,27 @@ public interface MyNewGrammarConstants {
   /** RegularExpression Id. */
   int INT = 9;
   /** RegularExpression Id. */
-  int ID = 10;
+  int IF = 10;
   /** RegularExpression Id. */
-  int NUMBER = 11;
+  int ELSE = 11;
   /** RegularExpression Id. */
-  int ASSIGN = 12;
+  int ID = 12;
   /** RegularExpression Id. */
-  int SEMICOLON = 13;
+  int NUMBER = 13;
+  /** RegularExpression Id. */
+  int ASSIGN = 14;
+  /** RegularExpression Id. */
+  int EQUALS = 15;
+  /** RegularExpression Id. */
+  int SEMICOLON = 16;
+  /** RegularExpression Id. */
+  int LPAREN = 17;
+  /** RegularExpression Id. */
+  int RPAREN = 18;
+  /** RegularExpression Id. */
+  int LBRACE = 19;
+  /** RegularExpression Id. */
+  int RBRACE = 20;
 
   /** Lexical state. */
   int DEFAULT = 0;
@@ -44,10 +58,17 @@ public interface MyNewGrammarConstants {
     "\"variables:\"",
     "\"code:\"",
     "\"int\"",
+    "\"if\"",
+    "\"else\"",
     "<ID>",
     "<NUMBER>",
     "\"=\"",
+    "\"==\"",
     "\";\"",
+    "\"(\"",
+    "\")\"",
+    "\"{\"",
+    "\"}\"",
   };
 
 }

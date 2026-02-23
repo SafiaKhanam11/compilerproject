@@ -1,10 +1,10 @@
-/**
+/*
  * JavaCC file for Classroom Language (CL)
  * Parser Architect: Member 2
  */
 options
 {
-  static = false; // Set to false to work better with your future Symbol Table class
+  static = false;
 }
 
 PARSER_BEGIN(MyNewGrammar)
@@ -15,19 +15,15 @@ public class MyNewGrammar
   public static void main(String args []) throws ParseException
   {
     System.out.println("Reading from standard input...");
-    System.out.println("Enter your CL code (Press Ctrl+Z on Windows or Ctrl+D on Mac/Linux, then Enter to finish):");
+    System.out.println("Enter your CL code (Press Ctrl+Z on Windows, or Ctrl+D on Mac/Linux, then Enter to finish):");
     
-    MyNewGrammar parser = new MyNewGrammar(System.in);
-    
-    try
-    {
-      parser.Start();
-      System.out.println("OK! Syntax is Correct.");
-    }
-    catch (Exception e)
-    {
-      System.out.println("NOK! Syntax Error.");
-      System.out.println(e.getMessage());
+    try {
+        // Instantiate the parser and call the starting rule
+        MyNewGrammar parser = new MyNewGrammar(System.in);
+        parser.Start();
+        System.out.println("Code parsed successfully! No syntax errors found.");
+    } catch (Exception e) {
+        System.out.println("Oops. " + e.getMessage());
     }
   }
 }
@@ -42,7 +38,7 @@ SKIP :
 | "\n"
 }
 
-/* Temporary Tokens (Member 1 will expand this list later) */
+/* --- TOKENS SECTION --- */
 TOKEN :
 {
   < START_PROG: "startProgram" >
@@ -50,40 +46,64 @@ TOKEN :
 | < VAR_SECTION: "variables:" >
 | < CODE_SECTION: "code:" >
 | < INT: "int" >
-| < ID: ["a"-"z","A"-"Z"] (["a"-"z","A"-"Z","0"-"9"])* >
+| < IF: "if" >
+| < ELSE: "else" >
+| < ID: ["a"-"z","A"-"Z"] (["a"-"z","A"-"Z","0"-"9"])* > // Added the * quantifier here
 | < NUMBER: (["0"-"9"])+ >
 | < ASSIGN: "=" >
+| < EQUALS: "==" >
 | < SEMICOLON: ";" >
+| < LPAREN: "(" >
+| < RPAREN: ")" >
+| < LBRACE: "{" >
+| < RBRACE: "}" >
 }
 
-/* --- PARSER RULES (Your Domain) --- */
+/* --- PARSER RULES --- */
 
-/* Rule 1: The entire program structure */
 void Start() : {}
 {
   <START_PROG> VariablesBlock() CodeBlock() <END_PROG> <EOF>
 }
 
-/* Rule 2: The Variables Section */
 void VariablesBlock() : {}
 {
   <VAR_SECTION> ( Declaration() )*
 }
 
-/* Rule 3: Declaring a single variable (e.g., "int x = 5;") */
 void Declaration() : {}
 {
   <INT> <ID> <ASSIGN> <NUMBER> <SEMICOLON>
 }
 
-/* Rule 4: The Code Section */
 void CodeBlock() : {}
 {
   <CODE_SECTION> ( Statement() )*
 }
 
-/* Rule 5: A placeholder for statements (We will add loopif and switchFor here later) */
 void Statement() : {}
 {
+  Assignment() | IfStatement()
+}
+
+void Assignment() : {}
+{
   <ID> <ASSIGN> <NUMBER> <SEMICOLON>
+}
+
+void IfStatement() : {}
+{
+  <IF> <LPAREN> Condition() <RPAREN>
+  <LBRACE>
+  ( Statement() )* <RBRACE>
+  (
+    <ELSE>
+    <LBRACE>
+    ( Statement() )* <RBRACE>
+  )?
+}
+
+void Condition() : {}
+{
+  <ID> <EQUALS> <NUMBER>
 }
