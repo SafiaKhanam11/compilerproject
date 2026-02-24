@@ -29,8 +29,10 @@ public class MyNewGrammar/*@bgen(jjtree)*/implements MyNewGrammarTreeConstants/*
         System.out.println("CL Parser - Milestone 1");
         MyNewGrammar parser = new MyNewGrammar(System.in);
         try {
-            parser.Start();
-            System.out.println("\nSUCCESS: Code parsed successfully!");
+            SimpleNode root = parser.Start();
+System.out.println("\nSUCCESS: Code parsed successfully!");
+System.out.println("\n--- PARSE TREE ---");
+root.dump("  ");
         } catch (Exception e) {
             System.out.println("\nERROR: " + e.getMessage());
             e.printStackTrace();
@@ -38,27 +40,13 @@ public class MyNewGrammar/*@bgen(jjtree)*/implements MyNewGrammarTreeConstants/*
     }
 }
 PARSER_END(MyNewGrammar)
-
-
-/* ============================= */
-/*   SKIP - Ignore Whitespace    */
-/* ============================= */
-
 SKIP : {
     " "
     | "\r"
     | "\t"
     | "\n"
 }
-
-
-/* ============================= */
-/*           TOKENS              */
-/* ============================= */
-
 TOKEN : {
-
-    /* --- Keywords --- */
       < START_PROG:   "startProgram"  >
     | < END_PROG:     "endProgram"    >
     | < VAR_SECTION:  "variables:"    >
@@ -73,14 +61,10 @@ TOKEN : {
     | < CASE:         "case"          >
     | < OTHER:        "other"         >
     | < OUTSTRING:    "outString"     >
-
-    /* --- Punctuation --- */
     | < SEMICOLON: ";" >
     | < COLON:     ":" >
     | < LPAREN:    "(" >
     | < RPAREN:    ")" >
-
-    /* --- Arithmetic Operators --- */
     | < PLUS:  "+" >
     | < MINUS: "-" >
     | < MULT:  "*" >
@@ -107,10 +91,6 @@ TOKEN : {
      * as EQUALS and not as two separate "=" tokens.
      */
     | < ASSIGN: "=" >
-
-    /* --- Literals --- */
-
-    /* Integer: one or more digits only */
     | < NUMBER: ( ["0"-"9"] )+ >
 
     /*
@@ -143,42 +123,48 @@ TOKEN : {
  *       code: ...
  *   endProgram
  */
-void Start() : {/*@bgen(jjtree) Start */
+
+
+SimpleNode Start() : {/*@bgen(jjtree) Start */
   SimpleNode jjtn000 = new SimpleNode(JJTSTART);
   boolean jjtc000 = true;
   jjtree.openNodeScope(jjtn000);
 /*@egen*/}
 {/*@bgen(jjtree) Start */
-    try {
+   try {
 /*@egen*/
-    <START_PROG>
+   <START_PROG>
     VariablesBlock()
     CodeBlock()
     <END_PROG>
     <EOF>/*@bgen(jjtree)*/
-    } catch (Throwable jjte000) {
-      if (jjtc000) {
-        jjtree.clearNodeScope(jjtn000);
-        jjtc000 = false;
-      } else {
-        jjtree.popNode();
-      }
-      if (jjte000 instanceof RuntimeException) {
-        throw (RuntimeException)jjte000;
-      }
-      if (jjte000 instanceof ParseException) {
-        throw (ParseException)jjte000;
-      }
-      throw (Error)jjte000;
-    } finally {
-      if (jjtc000) {
-        jjtree.closeNodeScope(jjtn000, true);
-      }
+    {
+      jjtree.closeNodeScope(jjtn000, true);
+      jjtc000 = false;
     }
 /*@egen*/
+    { return jjtn000; }/*@bgen(jjtree)*/
+   } catch (Throwable jjte000) {
+     if (jjtc000) {
+       jjtree.clearNodeScope(jjtn000);
+       jjtc000 = false;
+     } else {
+       jjtree.popNode();
+     }
+     if (jjte000 instanceof RuntimeException) {
+       throw (RuntimeException)jjte000;
+     }
+     if (jjte000 instanceof ParseException) {
+       throw (ParseException)jjte000;
+     }
+     throw (Error)jjte000;
+   } finally {
+     if (jjtc000) {
+       jjtree.closeNodeScope(jjtn000, true);
+     }
+   }
+/*@egen*/   // \u2190 added this last line inside the rule
 }
-
-
 /*
  * VariablesBlock - The "variables:" section
  * Zero or more variable declarations are allowed.
