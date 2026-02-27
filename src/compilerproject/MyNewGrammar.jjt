@@ -21,6 +21,7 @@ PARSER_BEGIN(MyNewGrammar)
 package compilerproject;
 
 public class MyNewGrammar {
+  public SymbolTable symbolTable = new SymbolTable();
     public static void main(String args[]) throws ParseException {
         System.out.println("CL Parser - Milestone 1");
         MyNewGrammar parser = new MyNewGrammar(System.in);
@@ -29,6 +30,7 @@ public class MyNewGrammar {
 System.out.println("\nSUCCESS: Code parsed successfully!");
 System.out.println("\n--- PARSE TREE ---");
 root.dump("  ");
+parser.symbolTable.printTable();
         } catch (Exception e) {
             System.out.println("\nERROR: " + e.getMessage());
             e.printStackTrace();
@@ -128,7 +130,7 @@ SimpleNode Start() : {}
     CodeBlock()
     <END_PROG>
     <EOF>
-    { return jjtThis; }   // ← added this last line inside the rule
+    { return jjtThis; }   
 }
 /*
  * VariablesBlock - The "variables:" section
@@ -140,40 +142,14 @@ void VariablesBlock() : {}
     ( Declaration() )*
 }
 
-
-/*
- * Declaration - A single variable declaration
- *
- * Syntax:
- *   int abc = 3;
- *   string name = "hello";
- *
- * Per PDF:
- *   - Only "int" and "string" types supported
- *   - Right-hand side is a literal value only (not an expression)
- *
- * ---- SYMBOL TABLE HOOK (Coordinate with Member 4) ----
- * When Member 4 finishes the SymbolTable class,
- * update this rule to capture tokens like this:
- *
- *   void Declaration() : { Token t; Token id; Token val; }
- *   {
- *       ( t = <INT_TYPE> | t = <STRING_TYPE> )
- *       id = <ID>
- *       <ASSIGN>
- *       ( val = <NUMBER> | val = <STRING_LITERAL> )
- *       <SEMICOLON>
- *       { SymbolTable.insert(id.image, t.image, val.image); }
- *   }
- * -------------------------------------------------------
- */
-void Declaration() : {}
+void Declaration() : { Token t; Token id; Token val; }
 {
-    ( <INT_TYPE> | <STRING_TYPE> )
-    <ID>
+    ( t = <INT_TYPE> | t = <STRING_TYPE> )
+    id = <ID>
     <ASSIGN>
-    ( <NUMBER> | <STRING_LITERAL> )
+    ( val = <NUMBER> | val = <STRING_LITERAL> )
     <SEMICOLON>
+    { symbolTable.insert(id.image, t.image, val.image); }
 }
 
 

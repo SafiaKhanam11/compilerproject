@@ -25,6 +25,7 @@ public class MyNewGrammar/*@bgen(jjtree)*/implements MyNewGrammarTreeConstants/*
   protected JJTMyNewGrammarState jjtree = new JJTMyNewGrammarState();
 
 /*@egen*/
+  public SymbolTable symbolTable = new SymbolTable();
     public static void main(String args[]) throws ParseException {
         System.out.println("CL Parser - Milestone 1");
         MyNewGrammar parser = new MyNewGrammar(System.in);
@@ -33,6 +34,7 @@ public class MyNewGrammar/*@bgen(jjtree)*/implements MyNewGrammarTreeConstants/*
 System.out.println("\nSUCCESS: Code parsed successfully!");
 System.out.println("\n--- PARSE TREE ---");
 root.dump("  ");
+parser.symbolTable.printTable();
         } catch (Exception e) {
             System.out.println("\nERROR: " + e.getMessage());
             e.printStackTrace();
@@ -163,7 +165,7 @@ SimpleNode Start() : {/*@bgen(jjtree) Start */
        jjtree.closeNodeScope(jjtn000, true);
      }
    }
-/*@egen*/   // \u2190 added this last line inside the rule
+/*@egen*/ 
 }
 /*
  * VariablesBlock - The "variables:" section
@@ -201,46 +203,25 @@ void VariablesBlock() : {/*@bgen(jjtree) VariablesBlock */
 /*@egen*/
 }
 
-
-/*
- * Declaration - A single variable declaration
- *
- * Syntax:
- *   int abc = 3;
- *   string name = "hello";
- *
- * Per PDF:
- *   - Only "int" and "string" types supported
- *   - Right-hand side is a literal value only (not an expression)
- *
- * ---- SYMBOL TABLE HOOK (Coordinate with Member 4) ----
- * When Member 4 finishes the SymbolTable class,
- * update this rule to capture tokens like this:
- *
- *   void Declaration() : { Token t; Token id; Token val; }
- *   {
- *       ( t = <INT_TYPE> | t = <STRING_TYPE> )
- *       id = <ID>
- *       <ASSIGN>
- *       ( val = <NUMBER> | val = <STRING_LITERAL> )
- *       <SEMICOLON>
- *       { SymbolTable.insert(id.image, t.image, val.image); }
- *   }
- * -------------------------------------------------------
- */
 void Declaration() : {/*@bgen(jjtree) Declaration */
-  SimpleNode jjtn000 = new SimpleNode(JJTDECLARATION);
-  boolean jjtc000 = true;
-  jjtree.openNodeScope(jjtn000);
-/*@egen*/}
+                       SimpleNode jjtn000 = new SimpleNode(JJTDECLARATION);
+                       boolean jjtc000 = true;
+                       jjtree.openNodeScope(jjtn000);
+/*@egen*/ Token t; Token id; Token val; }
 {/*@bgen(jjtree) Declaration */
     try {
 /*@egen*/
-    ( <INT_TYPE> | <STRING_TYPE> )
-    <ID>
+    ( t = <INT_TYPE> | t = <STRING_TYPE> )
+    id = <ID>
     <ASSIGN>
-    ( <NUMBER> | <STRING_LITERAL> )
+    ( val = <NUMBER> | val = <STRING_LITERAL> )
     <SEMICOLON>/*@bgen(jjtree)*/
+    {
+      jjtree.closeNodeScope(jjtn000, true);
+      jjtc000 = false;
+    }
+/*@egen*/
+    { symbolTable.insert(id.image, t.image, val.image); }/*@bgen(jjtree)*/
     } finally {
       if (jjtc000) {
         jjtree.closeNodeScope(jjtn000, true);
