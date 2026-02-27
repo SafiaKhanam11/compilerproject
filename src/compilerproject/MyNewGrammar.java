@@ -4,15 +4,21 @@ package compilerproject;
 
 public class MyNewGrammar/*@bgen(jjtree)*/implements MyNewGrammarTreeConstants, MyNewGrammarConstants {/*@bgen(jjtree)*/
   protected JJTMyNewGrammarState jjtree = new JJTMyNewGrammarState();public SymbolTable symbolTable = new SymbolTable();
+
     public static void main(String args[]) throws ParseException {
         System.out.println("CL Parser - Milestone 1");
-        MyNewGrammar parser = new MyNewGrammar(System.in);
         try {
+            java.io.InputStream input = (args.length > 0)
+                ? new java.io.FileInputStream(args[0])
+                : System.in;
+            MyNewGrammar parser = new MyNewGrammar(input);
             SimpleNode root = parser.Start();
-System.out.println("\nSUCCESS: Code parsed successfully!");
-System.out.println("\n--- PARSE TREE ---");
-root.dump("  ");
-parser.symbolTable.printTable();
+            System.out.println("\nSUCCESS: Code parsed successfully!");
+            System.out.println("\n--- PARSE TREE ---");
+            root.dump("  ");
+            parser.symbolTable.printTable();
+        } catch (java.io.FileNotFoundException e) {
+            System.out.println("ERROR: File not found - " + e.getMessage());
         } catch (Exception e) {
             System.out.println("\nERROR: " + e.getMessage());
             e.printStackTrace();
@@ -905,38 +911,7 @@ if (jjtc000) {
     finally { jj_save(3, xla); }
   }
 
-  private boolean jj_3R_Term_361_5_10()
- {
-    if (jj_3R_Factor_377_5_12()) return true;
-    Token xsp;
-    while (true) {
-      xsp = jj_scanpos;
-      if (jj_3R_Term_362_7_13()) { jj_scanpos = xsp; break; }
-    }
-    return false;
-  }
-
-  private boolean jj_3R_Assignment_200_5_8()
- {
-    if (jj_scan_token(ID)) return true;
-    if (jj_scan_token(ASSIGN)) return true;
-    return false;
-  }
-
-  private boolean jj_3_2()
- {
-    if (jj_3R_Expression_349_5_9()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_Factor_380_7_14()
- {
-    if (jj_scan_token(LPAREN)) return true;
-    if (jj_3R_Expression_349_5_9()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_Factor_377_5_12()
+  private boolean jj_3R_Factor_383_5_12()
  {
     Token xsp;
     xsp = jj_scanpos;
@@ -946,7 +921,7 @@ if (jjtc000) {
     jj_scanpos = xsp;
     if (jj_scan_token(35)) {
     jj_scanpos = xsp;
-    if (jj_3R_Factor_380_7_14()) return true;
+    if (jj_3R_Factor_386_7_14()) return true;
     }
     }
     }
@@ -955,17 +930,11 @@ if (jjtc000) {
 
   private boolean jj_3_3()
  {
-    if (jj_3R_Assignment_200_5_8()) return true;
+    if (jj_3R_Assignment_206_5_8()) return true;
     return false;
   }
 
-  private boolean jj_3_4()
- {
-    if (jj_3R_Assignment_200_5_8()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_Expression_350_7_11()
+  private boolean jj_3R_Expression_356_7_11()
  {
     Token xsp;
     xsp = jj_scanpos;
@@ -976,24 +945,30 @@ if (jjtc000) {
     return false;
   }
 
-  private boolean jj_3R_Expression_349_5_9()
+  private boolean jj_3_4()
  {
-    if (jj_3R_Term_361_5_10()) return true;
+    if (jj_3R_Assignment_206_5_8()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_Expression_355_5_9()
+ {
+    if (jj_3R_Term_367_5_10()) return true;
     Token xsp;
     while (true) {
       xsp = jj_scanpos;
-      if (jj_3R_Expression_350_7_11()) { jj_scanpos = xsp; break; }
+      if (jj_3R_Expression_356_7_11()) { jj_scanpos = xsp; break; }
     }
     return false;
   }
 
   private boolean jj_3_1()
  {
-    if (jj_3R_Assignment_200_5_8()) return true;
+    if (jj_3R_Assignment_206_5_8()) return true;
     return false;
   }
 
-  private boolean jj_3R_Term_362_7_13()
+  private boolean jj_3R_Term_368_7_13()
  {
     Token xsp;
     xsp = jj_scanpos;
@@ -1001,6 +976,37 @@ if (jjtc000) {
     jj_scanpos = xsp;
     if (jj_scan_token(26)) return true;
     }
+    return false;
+  }
+
+  private boolean jj_3R_Assignment_206_5_8()
+ {
+    if (jj_scan_token(ID)) return true;
+    if (jj_scan_token(ASSIGN)) return true;
+    return false;
+  }
+
+  private boolean jj_3_2()
+ {
+    if (jj_3R_Expression_355_5_9()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_Term_367_5_10()
+ {
+    if (jj_3R_Factor_383_5_12()) return true;
+    Token xsp;
+    while (true) {
+      xsp = jj_scanpos;
+      if (jj_3R_Term_368_7_13()) { jj_scanpos = xsp; break; }
+    }
+    return false;
+  }
+
+  private boolean jj_3R_Factor_386_7_14()
+ {
+    if (jj_scan_token(LPAREN)) return true;
+    if (jj_3R_Expression_355_5_9()) return true;
     return false;
   }
 

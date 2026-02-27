@@ -21,16 +21,22 @@ PARSER_BEGIN(MyNewGrammar)
 package compilerproject;
 
 public class MyNewGrammar {
-  public SymbolTable symbolTable = new SymbolTable();
+    public SymbolTable symbolTable = new SymbolTable();
+
     public static void main(String args[]) throws ParseException {
         System.out.println("CL Parser - Milestone 1");
-        MyNewGrammar parser = new MyNewGrammar(System.in);
         try {
+            java.io.InputStream input = (args.length > 0)
+                ? new java.io.FileInputStream(args[0])
+                : System.in;
+            MyNewGrammar parser = new MyNewGrammar(input);
             SimpleNode root = parser.Start();
-System.out.println("\nSUCCESS: Code parsed successfully!");
-System.out.println("\n--- PARSE TREE ---");
-root.dump("  ");
-parser.symbolTable.printTable();
+            System.out.println("\nSUCCESS: Code parsed successfully!");
+            System.out.println("\n--- PARSE TREE ---");
+            root.dump("  ");
+            parser.symbolTable.printTable();
+        } catch (java.io.FileNotFoundException e) {
+            System.out.println("ERROR: File not found - " + e.getMessage());
         } catch (Exception e) {
             System.out.println("\nERROR: " + e.getMessage());
             e.printStackTrace();
