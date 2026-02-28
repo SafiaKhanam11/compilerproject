@@ -1,17 +1,3 @@
-/*
- * CL Language Parser - Milestone 1
- * Member 2: Parser (Grammar Architect)
- * Course: Compiler Construction / Spring 2026
- * Dr. Sabina Akhtar
- *
- * NOTE ON OPERATORS:
- * The PDF officially lists 4 conditional operators: <=, >=, ==, <>
- * However the PDF's own factorial example uses "num > 0" (needs > and <)
- * SOLUTION: We include all 6 operators to match the PDF's own examples.
- * The 4 official ones are: <=, >=, ==, <>
- * The 2 extra ones are:    <,  >   (required by factorial example in PDF)
- */
-
 options {
     STATIC = false;
     LOOKAHEAD = 1;
@@ -73,60 +59,17 @@ TOKEN : {
     | < MINUS: "-" >
     | < MULT:  "*" >
     | < DIV:   "/" >
-
-    /*
-     * --- Relational Operators ---
-     * IMPORTANT: Multi-character tokens (==, <=, >=, <>)
-     * MUST be declared BEFORE single-character ones (=, <, >)
-     * so JavaCC matches the longest token first.
-     *
-     * Official PDF operators : ==, <=, >=, <>
-     * Extra needed by PDF example: <, >
-     */
     | < EQUALS: "==" >
     | < LE:     "<=" >
     | < GE:     ">=" >
     | < NE:     "<>" >
     | < LT:     "<"  >
     | < GT:     ">"  >
-
-    /*
-     * ASSIGN must come AFTER == so that "==" is matched
-     * as EQUALS and not as two separate "=" tokens.
-     */
     | < ASSIGN: "=" >
     | < NUMBER: ( ["0"-"9"] )+ >
-
-    /*
-     * String literal: enclosed in double quotes.
-     * Allows any character except quote, newline, carriage return.
-     */
     | < STRING_LITERAL: "\"" ( ~["\"", "\n", "\r"] )* "\"" >
-
-    /*
-     * Identifier: starts with a letter, then letters or digits.
-     * Per PDF Definition 1a: "Identifier token starts with a letter."
-     */
     | < ID: ["a"-"z","A"-"Z"] ( ["a"-"z","A"-"Z","0"-"9"] )* >
 }
-
-
-/* ============================= */
-/*        GRAMMAR RULES          */
-/* ============================= */
-
-/*
- * Start - Entry point of every CL program
- *
- * Per PDF Definition 6:
- * "Start symbol is startProgram and end symbol is endProgram."
- *
- * Structure:
- *   startProgram
- *       variables: ...
- *       code: ...
- *   endProgram
- */
 
 
 SimpleNode Start() : {}
@@ -138,10 +81,7 @@ SimpleNode Start() : {}
     <EOF>
     { return jjtThis; }   
 }
-/*
- * VariablesBlock - The "variables:" section
- * Zero or more variable declarations are allowed.
- */
+
 void VariablesBlock() : {}
 {
     <VAR_SECTION>
@@ -158,31 +98,11 @@ void Declaration() : { Token t; Token id; Token val; }
     { symbolTable.insert(id.image, t.image, val.image); }
 }
 
-
-/*
- * CodeBlock - The "code:" section
- * Contains zero or more statements.
- */
 void CodeBlock() : {}
 {
     <CODE_SECTION>
     ( Statement() )*
 }
-
-
-/*
- * Statement - Any valid statement inside the code block
- *
- * Per PDF, valid statements are:
- *   - Assignment
- *   - loopif
- *   - switchFor
- *   - outString
- *
- * LOOKAHEAD(2):
- *   Assignment starts with <ID> <ASSIGN>.
- *   JavaCC needs 2 tokens to distinguish it from other rules.
- */
 void Statement() : {}
 {
     LOOKAHEAD(2) Assignment()
@@ -190,17 +110,6 @@ void Statement() : {}
     | SwitchFor()
     | OutString()
 }
-
-
-/*
- * Assignment - Assigns an expression to a variable
- *
- * Syntax:  result = abc + xyz;
- *
- * Per PDF Definition 5:
- *   "Left-hand side can only be a variable."
- *   "Right-hand side can be a variable, number, or operation."
- */
 void Assignment() : {}
 {
     <ID>
@@ -208,18 +117,6 @@ void Assignment() : {}
     Expression()
     <SEMICOLON>
 }
-
-
-/*
- * OutString - Prints an expression or string literal
- *
- * Syntax:
- *   outString(result);
- *   outString("hello world");
- *
- * Per PDF Definition 7:
- *   "outString(<Expression or string>) is used to output a value."
- */
 void OutString() : {}
 {
     <OUTSTRING>
@@ -228,23 +125,6 @@ void OutString() : {}
     <RPAREN>
     <SEMICOLON>
 }
-
-
-/*
- * LoopIf - While-style loop construct
- *
- * Syntax:
- *   loopif <condition> holds
- *       <one or more statements>
- *   endloop
- *
- * Per PDF:
- *   - At least ONE statement required in body (uses + not *)
- *   - "No nested switchFor and loopif statements are allowed"
- *
- * No-nesting is enforced by using LoopIfBody()
- * instead of Statement() inside the loop body.
- */
 void LoopIf() : {}
 {
     <LOOPIF>
@@ -253,39 +133,12 @@ void LoopIf() : {}
     ( LoopIfBody() )+
     <ENDLOOP>
 }
-
-
-/*
- * LoopIfBody - Statements allowed INSIDE a loopif
- *
- * Only Assignment and OutString permitted here.
- * This enforces the no-nesting rule from the PDF.
- * LOOKAHEAD(2) needed to distinguish Assignment from OutString.
- */
 void LoopIfBody() : {}
 {
     LOOKAHEAD(2) Assignment()
     | OutString()
 }
 
-
-/*
- * SwitchFor - Conditional switch construct
- *
- * Syntax:
- *   switchFor (<variable>)
- *       case <value>: <statement(s)>
- *       case <value>: <statement(s)>
- *       other: <statement(s)>
- *   endswitchFor
- *
- * Per PDF:
- *   - At least ONE case required (uses + not *)
- *   - Exactly ONE "other" default clause required
- *   - Per Definition 3: "constantValue can only be integer
- *     or string value. It cannot be an expression."
- *   - No nesting allowed, enforced by SwitchBody()
- */
 void SwitchFor() : {}
 {
     <SWITCHFOR>
@@ -297,42 +150,11 @@ void SwitchFor() : {}
     <ENDSWITCH>
 }
 
-
-/*
- * SwitchBody - Statements allowed INSIDE each case/other branch
- *
- * Only Assignment and OutString permitted.
- * At least one statement required per branch (uses + not *).
- * Enforces no-nesting rule from the PDF.
- */
 void SwitchBody() : {}
 {
     ( LOOKAHEAD(2) Assignment() | OutString() )+
 }
 
-
-/*
- * Condition - Conditional expression used inside loopif
- *
- * Per PDF Definition 4:
- *   "The condExpression can only be a conditional expression
- *    applied on numbers or variables."
- *
- * Official operators from PDF : ==, <=, >=, <>
- * Extra operators also included: <, >
- *
- * Reason for including < and >:
- *   The PDF's own factorial example on Page 2 uses "num > 0".
- *   Without < and >, that example would fail to parse.
- *   So while not listed in Definition 4, they are clearly
- *   intended to be supported based on the PDF's own code sample.
- *
- * Examples:
- *   num > 0        (from PDF factorial example)
- *   abc == 5
- *   x <= y
- *   x <> y
- */
 void Condition() : {}
 {
     Expression()
@@ -340,44 +162,18 @@ void Condition() : {}
     Expression()
 }
 
-
-/*
- * Expression - Handles + and - (lowest precedence)
- *
- * Per PDF Definition 5:
- *   Operators: +, -, *, /
- *   Precedence same as Java.
- *
- * Example: abc + xyz - 1
- */
 void Expression() : {}
 {
     Term()
     ( ( <PLUS> | <MINUS> ) Term() )*
 }
 
-
-/*
- * Term - Handles * and / (higher precedence than + and -)
- *
- * Example: fact * num
- */
 void Term() : {}
 {
     Factor()
     ( ( <MULT> | <DIV> ) Factor() )*
 }
 
-
-/*
- * Factor - A single unit in an expression
- *
- * Can be:
- *   - A number literal    :  42
- *   - A variable          :  abc
- *   - A string literal    :  "hello"
- *   - Parenthesized expr  :  (abc + 1)
- */
 void Factor() : {}
 {
     <NUMBER>
