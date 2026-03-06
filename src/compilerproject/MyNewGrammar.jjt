@@ -8,26 +8,27 @@ package compilerproject;
 
 public class MyNewGrammar {
     public SymbolTable symbolTable = new SymbolTable();
-
-    public static void main(String args[]) throws ParseException {
-        System.out.println("CL Parser - Milestone 1");
-        try {
-            java.io.InputStream input = (args.length > 0)
-                ? new java.io.FileInputStream(args[0])
-                : System.in;
-            MyNewGrammar parser = new MyNewGrammar(input);
-            SimpleNode root = parser.Start();
-            System.out.println("\nSUCCESS: Code parsed successfully!");
-            System.out.println("\n--- PARSE TREE ---");
-            root.dump("  ");
-            parser.symbolTable.printTable();
-        } catch (java.io.FileNotFoundException e) {
-            System.out.println("ERROR: File not found - " + e.getMessage());
-        } catch (Exception e) {
-            System.out.println("\nERROR: " + e.getMessage());
-            e.printStackTrace();
-        }
+    public SemanticAnalyzer semanticAnalyzer = new SemanticAnalyzer(symbolTable);
+   public static void main(String args[]) throws ParseException {
+    System.out.println("CL Parser - Milestone 1");
+    try {
+        java.io.InputStream input = (args.length > 0)
+            ? new java.io.FileInputStream(args[0])
+            : System.in;
+        MyNewGrammar parser = new MyNewGrammar(input);
+        SimpleNode root = parser.Start();
+        System.out.println("\nSUCCESS: Code parsed successfully!");
+        System.out.println("\n--- PARSE TREE ---");
+        root.dump("  ");
+        parser.semanticAnalyzer.printSummary();  // ← fix this line
+    } catch (java.io.FileNotFoundException e) {
+        System.out.println("ERROR: File not found - " + e.getMessage());
+    } catch (Exception e) {
+        System.out.println("\nERROR: " + e.getMessage());
+        e.printStackTrace();
     }
+}
+
 }
 PARSER_END(MyNewGrammar)
 SKIP : {
@@ -95,7 +96,7 @@ void Declaration() : { Token t; Token id; Token val; }
     <ASSIGN>
     ( val = <NUMBER> | val = <STRING_LITERAL> )
     <SEMICOLON>
-    { symbolTable.insert(id.image, t.image, val.image); }
+    { semanticAnalyzer.declareVariable(id.image, t.image, val.image); }
 }
 
 void CodeBlock() : {}
@@ -110,9 +111,10 @@ void Statement() : {}
     | SwitchFor()
     | OutString()
 }
-void Assignment() : {}
+void Assignment() : { Token id; }
 {
-    <ID>
+    id = <ID>
+    { semanticAnalyzer.checkAssignment(id.image); }
     <ASSIGN>
     Expression()
     <SEMICOLON>
@@ -139,17 +141,17 @@ void LoopIfBody() : {}
     | OutString()
 }
 
-void SwitchFor() : {}
+void SwitchFor() : { Token id; }
 {
     <SWITCHFOR>
     <LPAREN>
-    <ID>
+    id = <ID>
+    { semanticAnalyzer.checkVariableDeclared(id.image); }
     <RPAREN>
     ( <CASE> ( <NUMBER> | <STRING_LITERAL> ) <COLON> SwitchBody() )+
     <OTHER> <COLON> SwitchBody()
     <ENDSWITCH>
 }
-
 void SwitchBody() : {}
 {
     ( LOOKAHEAD(2) Assignment() | OutString() )+
@@ -174,11 +176,10 @@ void Term() : {}
     ( ( <MULT> | <DIV> ) Factor() )*
 }
 
-void Factor() : {}
+void Factor() : { Token t; }
 {
     <NUMBER>
-    | <ID>
+    | t = <ID> { semanticAnalyzer.checkVariableDeclared(t.image); }
     | <STRING_LITERAL>
     | <LPAREN> Expression() <RPAREN>
 }
-

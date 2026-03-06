@@ -4,46 +4,28 @@ package compilerproject;
 
 public class MyNewGrammar/*@bgen(jjtree)*/implements MyNewGrammarTreeConstants, MyNewGrammarConstants {/*@bgen(jjtree)*/
   protected JJTMyNewGrammarState jjtree = new JJTMyNewGrammarState();public SymbolTable symbolTable = new SymbolTable();
-
-    public static void main(String args[]) throws ParseException {
-        System.out.println("CL Parser - Milestone 1");
-        try {
-            java.io.InputStream input = (args.length > 0)
-                ? new java.io.FileInputStream(args[0])
-                : System.in;
-            MyNewGrammar parser = new MyNewGrammar(input);
-            SimpleNode root = parser.Start();
-            System.out.println("\nSUCCESS: Code parsed successfully!");
-            System.out.println("\n--- PARSE TREE ---");
-            root.dump("  ");
-            parser.symbolTable.printTable();
-        } catch (java.io.FileNotFoundException e) {
-            System.out.println("ERROR: File not found - " + e.getMessage());
-        } catch (Exception e) {
-            System.out.println("\nERROR: " + e.getMessage());
-            e.printStackTrace();
-        }
+    public SemanticAnalyzer semanticAnalyzer = new SemanticAnalyzer(symbolTable);
+   public static void main(String args[]) throws ParseException {
+    System.out.println("CL Parser - Milestone 1");
+    try {
+        java.io.InputStream input = (args.length > 0)
+            ? new java.io.FileInputStream(args[0])
+            : System.in;
+        MyNewGrammar parser = new MyNewGrammar(input);
+        SimpleNode root = parser.Start();
+        System.out.println("\nSUCCESS: Code parsed successfully!");
+        System.out.println("\n--- PARSE TREE ---");
+        root.dump("  ");
+        parser.semanticAnalyzer.printSummary();  // ← fix this line
+    } catch (java.io.FileNotFoundException e) {
+        System.out.println("ERROR: File not found - " + e.getMessage());
+    } catch (Exception e) {
+        System.out.println("\nERROR: " + e.getMessage());
+        e.printStackTrace();
     }
+}
 
-/* ============================= */
-/*        GRAMMAR RULES          */
-/* ============================= */
-
-/*
- * Start - Entry point of every CL program
- *
- * Per PDF Definition 6:
- * "Start symbol is startProgram and end symbol is endProgram."
- *
- * Structure:
- *   startProgram
- *       variables: ...
- *       code: ...
- *   endProgram
- */
-  final public 
-
-SimpleNode Start() throws ParseException {/*@bgen(jjtree) Start */
+  final public SimpleNode Start() throws ParseException {/*@bgen(jjtree) Start */
   SimpleNode jjtn000 = new SimpleNode(JJTSTART);
   boolean jjtc000 = true;
   jjtree.openNodeScope(jjtn000);
@@ -78,10 +60,6 @@ if (jjtc000) {
     throw new Error("Missing return statement in function");
 }
 
-/*
- * VariablesBlock - The "variables:" section
- * Zero or more variable declarations are allowed.
- */
   final public void VariablesBlock() throws ParseException {/*@bgen(jjtree) VariablesBlock */
   SimpleNode jjtn000 = new SimpleNode(JJTVARIABLESBLOCK);
   boolean jjtc000 = true;
@@ -161,7 +139,7 @@ if (jjtc000) {
       jj_consume_token(SEMICOLON);
 jjtree.closeNodeScope(jjtn000, true);
       jjtc000 = false;
-symbolTable.insert(id.image, t.image, val.image);
+semanticAnalyzer.declareVariable(id.image, t.image, val.image);
     } finally {
 if (jjtc000) {
         jjtree.closeNodeScope(jjtn000, true);
@@ -169,10 +147,6 @@ if (jjtc000) {
     }
 }
 
-/*
- * CodeBlock - The "code:" section
- * Contains zero or more statements.
- */
   final public void CodeBlock() throws ParseException {/*@bgen(jjtree) CodeBlock */
   SimpleNode jjtn000 = new SimpleNode(JJTCODEBLOCK);
   boolean jjtc000 = true;
@@ -216,19 +190,6 @@ if (jjtc000) {
     }
 }
 
-/*
- * Statement - Any valid statement inside the code block
- *
- * Per PDF, valid statements are:
- *   - Assignment
- *   - loopif
- *   - switchFor
- *   - outString
- *
- * LOOKAHEAD(2):
- *   Assignment starts with <ID> <ASSIGN>.
- *   JavaCC needs 2 tokens to distinguish it from other rules.
- */
   final public void Statement() throws ParseException {/*@bgen(jjtree) Statement */
   SimpleNode jjtn000 = new SimpleNode(JJTSTATEMENT);
   boolean jjtc000 = true;
@@ -277,21 +238,13 @@ if (jjtc000) {
     }
 }
 
-/*
- * Assignment - Assigns an expression to a variable
- *
- * Syntax:  result = abc + xyz;
- *
- * Per PDF Definition 5:
- *   "Left-hand side can only be a variable."
- *   "Right-hand side can be a variable, number, or operation."
- */
   final public void Assignment() throws ParseException {/*@bgen(jjtree) Assignment */
-  SimpleNode jjtn000 = new SimpleNode(JJTASSIGNMENT);
-  boolean jjtc000 = true;
-  jjtree.openNodeScope(jjtn000);
+                      SimpleNode jjtn000 = new SimpleNode(JJTASSIGNMENT);
+                      boolean jjtc000 = true;
+                      jjtree.openNodeScope(jjtn000);Token id;
     try {
-      jj_consume_token(ID);
+      id = jj_consume_token(ID);
+semanticAnalyzer.checkAssignment(id.image);
       jj_consume_token(ASSIGN);
       Expression();
       jj_consume_token(SEMICOLON);
@@ -316,16 +269,6 @@ if (jjtc000) {
     }
 }
 
-/*
- * OutString - Prints an expression or string literal
- *
- * Syntax:
- *   outString(result);
- *   outString("hello world");
- *
- * Per PDF Definition 7:
- *   "outString(<Expression or string>) is used to output a value."
- */
   final public void OutString() throws ParseException {/*@bgen(jjtree) OutString */
   SimpleNode jjtn000 = new SimpleNode(JJTOUTSTRING);
   boolean jjtc000 = true;
@@ -370,21 +313,6 @@ if (jjtc000) {
     }
 }
 
-/*
- * LoopIf - While-style loop construct
- *
- * Syntax:
- *   loopif <condition> holds
- *       <one or more statements>
- *   endloop
- *
- * Per PDF:
- *   - At least ONE statement required in body (uses + not *)
- *   - "No nested switchFor and loopif statements are allowed"
- *
- * No-nesting is enforced by using LoopIfBody()
- * instead of Statement() inside the loop body.
- */
   final public void LoopIf() throws ParseException {/*@bgen(jjtree) LoopIf */
   SimpleNode jjtn000 = new SimpleNode(JJTLOOPIF);
   boolean jjtc000 = true;
@@ -429,13 +357,6 @@ if (jjtc000) {
     }
 }
 
-/*
- * LoopIfBody - Statements allowed INSIDE a loopif
- *
- * Only Assignment and OutString permitted here.
- * This enforces the no-nesting rule from the PDF.
- * LOOKAHEAD(2) needed to distinguish Assignment from OutString.
- */
   final public void LoopIfBody() throws ParseException {/*@bgen(jjtree) LoopIfBody */
   SimpleNode jjtn000 = new SimpleNode(JJTLOOPIFBODY);
   boolean jjtc000 = true;
@@ -476,31 +397,15 @@ if (jjtc000) {
     }
 }
 
-/*
- * SwitchFor - Conditional switch construct
- *
- * Syntax:
- *   switchFor (<variable>)
- *       case <value>: <statement(s)>
- *       case <value>: <statement(s)>
- *       other: <statement(s)>
- *   endswitchFor
- *
- * Per PDF:
- *   - At least ONE case required (uses + not *)
- *   - Exactly ONE "other" default clause required
- *   - Per Definition 3: "constantValue can only be integer
- *     or string value. It cannot be an expression."
- *   - No nesting allowed, enforced by SwitchBody()
- */
   final public void SwitchFor() throws ParseException {/*@bgen(jjtree) SwitchFor */
-  SimpleNode jjtn000 = new SimpleNode(JJTSWITCHFOR);
-  boolean jjtc000 = true;
-  jjtree.openNodeScope(jjtn000);
+                     SimpleNode jjtn000 = new SimpleNode(JJTSWITCHFOR);
+                     boolean jjtc000 = true;
+                     jjtree.openNodeScope(jjtn000);Token id;
     try {
       jj_consume_token(SWITCHFOR);
       jj_consume_token(LPAREN);
-      jj_consume_token(ID);
+      id = jj_consume_token(ID);
+semanticAnalyzer.checkVariableDeclared(id.image);
       jj_consume_token(RPAREN);
       label_4:
       while (true) {
@@ -556,13 +461,6 @@ if (jjtc000) {
     }
 }
 
-/*
- * SwitchBody - Statements allowed INSIDE each case/other branch
- *
- * Only Assignment and OutString permitted.
- * At least one statement required per branch (uses + not *).
- * Enforces no-nesting rule from the PDF.
- */
   final public void SwitchBody() throws ParseException {/*@bgen(jjtree) SwitchBody */
   SimpleNode jjtn000 = new SimpleNode(JJTSWITCHBODY);
   boolean jjtc000 = true;
@@ -616,28 +514,6 @@ if (jjtc000) {
     }
 }
 
-/*
- * Condition - Conditional expression used inside loopif
- *
- * Per PDF Definition 4:
- *   "The condExpression can only be a conditional expression
- *    applied on numbers or variables."
- *
- * Official operators from PDF : ==, <=, >=, <>
- * Extra operators also included: <, >
- *
- * Reason for including < and >:
- *   The PDF's own factorial example on Page 2 uses "num > 0".
- *   Without < and >, that example would fail to parse.
- *   So while not listed in Definition 4, they are clearly
- *   intended to be supported based on the PDF's own code sample.
- *
- * Examples:
- *   num > 0        (from PDF factorial example)
- *   abc == 5
- *   x <= y
- *   x <> y
- */
   final public void Condition() throws ParseException {/*@bgen(jjtree) Condition */
   SimpleNode jjtn000 = new SimpleNode(JJTCONDITION);
   boolean jjtc000 = true;
@@ -696,15 +572,6 @@ if (jjtc000) {
     }
 }
 
-/*
- * Expression - Handles + and - (lowest precedence)
- *
- * Per PDF Definition 5:
- *   Operators: +, -, *, /
- *   Precedence same as Java.
- *
- * Example: abc + xyz - 1
- */
   final public void Expression() throws ParseException {/*@bgen(jjtree) Expression */
   SimpleNode jjtn000 = new SimpleNode(JJTEXPRESSION);
   boolean jjtc000 = true;
@@ -760,11 +627,6 @@ if (jjtc000) {
     }
 }
 
-/*
- * Term - Handles * and / (higher precedence than + and -)
- *
- * Example: fact * num
- */
   final public void Term() throws ParseException {/*@bgen(jjtree) Term */
   SimpleNode jjtn000 = new SimpleNode(JJTTERM);
   boolean jjtc000 = true;
@@ -820,19 +682,10 @@ if (jjtc000) {
     }
 }
 
-/*
- * Factor - A single unit in an expression
- *
- * Can be:
- *   - A number literal    :  42
- *   - A variable          :  abc
- *   - A string literal    :  "hello"
- *   - Parenthesized expr  :  (abc + 1)
- */
   final public void Factor() throws ParseException {/*@bgen(jjtree) Factor */
-  SimpleNode jjtn000 = new SimpleNode(JJTFACTOR);
-  boolean jjtc000 = true;
-  jjtree.openNodeScope(jjtn000);
+                  SimpleNode jjtn000 = new SimpleNode(JJTFACTOR);
+                  boolean jjtc000 = true;
+                  jjtree.openNodeScope(jjtn000);Token t;
     try {
       switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
       case NUMBER:{
@@ -840,7 +693,10 @@ if (jjtc000) {
         break;
         }
       case ID:{
-        jj_consume_token(ID);
+        t = jj_consume_token(ID);
+jjtree.closeNodeScope(jjtn000, true);
+                 jjtc000 = false;
+semanticAnalyzer.checkVariableDeclared(t.image);
         break;
         }
       case STRING_LITERAL:{
@@ -911,64 +767,7 @@ if (jjtc000) {
     finally { jj_save(3, xla); }
   }
 
-  private boolean jj_3R_Factor_383_5_12()
- {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_scan_token(34)) {
-    jj_scanpos = xsp;
-    if (jj_scan_token(36)) {
-    jj_scanpos = xsp;
-    if (jj_scan_token(35)) {
-    jj_scanpos = xsp;
-    if (jj_3R_Factor_386_7_14()) return true;
-    }
-    }
-    }
-    return false;
-  }
-
-  private boolean jj_3_3()
- {
-    if (jj_3R_Assignment_206_5_8()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_Expression_356_7_11()
- {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_scan_token(23)) {
-    jj_scanpos = xsp;
-    if (jj_scan_token(24)) return true;
-    }
-    return false;
-  }
-
-  private boolean jj_3_4()
- {
-    if (jj_3R_Assignment_206_5_8()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_Expression_355_5_9()
- {
-    if (jj_3R_Term_367_5_10()) return true;
-    Token xsp;
-    while (true) {
-      xsp = jj_scanpos;
-      if (jj_3R_Expression_356_7_11()) { jj_scanpos = xsp; break; }
-    }
-    return false;
-  }
-
-  private boolean jj_3_1()
- {
-    if (jj_3R_Assignment_206_5_8()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_Term_368_7_13()
+  private boolean jj_3R_Term_176_7_13()
  {
     Token xsp;
     xsp = jj_scanpos;
@@ -979,34 +778,97 @@ if (jjtc000) {
     return false;
   }
 
-  private boolean jj_3R_Assignment_206_5_8()
+  private boolean jj_3_1()
+ {
+    if (jj_3R_Assignment_116_5_8()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_Term_175_5_10()
+ {
+    if (jj_3R_Factor_181_5_12()) return true;
+    Token xsp;
+    while (true) {
+      xsp = jj_scanpos;
+      if (jj_3R_Term_176_7_13()) { jj_scanpos = xsp; break; }
+    }
+    return false;
+  }
+
+  private boolean jj_3_2()
+ {
+    if (jj_3R_Expression_169_5_9()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_Expression_170_7_11()
+ {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_scan_token(23)) {
+    jj_scanpos = xsp;
+    if (jj_scan_token(24)) return true;
+    }
+    return false;
+  }
+
+  private boolean jj_3R_Expression_169_5_9()
+ {
+    if (jj_3R_Term_175_5_10()) return true;
+    Token xsp;
+    while (true) {
+      xsp = jj_scanpos;
+      if (jj_3R_Expression_170_7_11()) { jj_scanpos = xsp; break; }
+    }
+    return false;
+  }
+
+  private boolean jj_3R_Factor_184_7_15()
+ {
+    if (jj_scan_token(LPAREN)) return true;
+    if (jj_3R_Expression_169_5_9()) return true;
+    return false;
+  }
+
+  private boolean jj_3_3()
+ {
+    if (jj_3R_Assignment_116_5_8()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_Assignment_116_5_8()
  {
     if (jj_scan_token(ID)) return true;
     if (jj_scan_token(ASSIGN)) return true;
     return false;
   }
 
-  private boolean jj_3_2()
+  private boolean jj_3R_Factor_182_7_14()
  {
-    if (jj_3R_Expression_355_5_9()) return true;
+    if (jj_scan_token(ID)) return true;
     return false;
   }
 
-  private boolean jj_3R_Term_367_5_10()
+  private boolean jj_3_4()
  {
-    if (jj_3R_Factor_383_5_12()) return true;
+    if (jj_3R_Assignment_116_5_8()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_Factor_181_5_12()
+ {
     Token xsp;
-    while (true) {
-      xsp = jj_scanpos;
-      if (jj_3R_Term_368_7_13()) { jj_scanpos = xsp; break; }
+    xsp = jj_scanpos;
+    if (jj_scan_token(34)) {
+    jj_scanpos = xsp;
+    if (jj_3R_Factor_182_7_14()) {
+    jj_scanpos = xsp;
+    if (jj_scan_token(35)) {
+    jj_scanpos = xsp;
+    if (jj_3R_Factor_184_7_15()) return true;
     }
-    return false;
-  }
-
-  private boolean jj_3R_Factor_386_7_14()
- {
-    if (jj_scan_token(LPAREN)) return true;
-    if (jj_3R_Expression_355_5_9()) return true;
+    }
+    }
     return false;
   }
 
