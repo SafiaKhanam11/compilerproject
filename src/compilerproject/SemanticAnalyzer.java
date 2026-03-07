@@ -9,12 +9,7 @@ public class SemanticAnalyzer {
         this.symbolTable = symbolTable;
     }
 
-    /*
-     * Check 1 - Variable declaration
-     * Checks: unsupported type, duplicate declaration
-     */
     public boolean declareVariable(String name, String type, String value) {
-        // check supported types
         if (!type.equals("int") && !type.equals("string")) {
             System.out.println("Semantic Error: Unsupported type '" + type + 
                                "' for variable '" + name + "'");
@@ -27,23 +22,17 @@ public class SemanticAnalyzer {
             errorCount++;
             return false;
         }
-        // check duplicate declaration
         if (symbolTable.contains(name)) {
             System.out.println("Semantic Error: Variable '" + name + 
                                "' already declared.");
             errorCount++;
             return false;
         }
-        // all good - insert into symbol table
+       
         symbolTable.insert(name, type, value);
         System.out.println("  [SA] Declared: " + name + " (" + type + ") = " + value);
         return true;
     }
-
-    /*
-     * Check 2 - Variable used before declaration
-     * Called from Factor() when an ID is used in expression
-     */
     public boolean checkVariableDeclared(String name) {
         if (!symbolTable.contains(name)) {
             System.out.println("Semantic Error: Variable '" + name + 
@@ -53,11 +42,6 @@ public class SemanticAnalyzer {
         }
         return true;
     }
-
-    /*
-     * Check 3 - Assignment to undeclared variable
-     * Called from Assignment() for left-hand side variable
-     */
     public boolean checkAssignment(String name) {
         if (!symbolTable.contains(name)) {
             System.out.println("Semantic Error: Cannot assign to undeclared variable '" + 
@@ -67,11 +51,6 @@ public class SemanticAnalyzer {
         }
         return true;
     }
-
-    /*
-     * Check 4 - Type mismatch
-     * Checks if variable matches expected type
-     */
     public boolean checkType(String name, String expectedType) {
         SymbolTable.SymbolInfo info = symbolTable.lookup(name);
         if (info == null) {
@@ -88,10 +67,6 @@ public class SemanticAnalyzer {
         }
         return true;
     }
-
-    /*
-     * Print summary of semantic analysis
-     */
     public void printSummary() {
         System.out.println("\n--- SEMANTIC ANALYSIS SUMMARY ---");
         if (errorCount == 0) {
