@@ -6,43 +6,78 @@ options {
 PARSER_BEGIN(MyNewGrammar)
 package compilerproject;
 
+import java.util.ArrayList;
+
 public class MyNewGrammar {
     public SymbolTable symbolTable = new SymbolTable();
     public SemanticAnalyzer semanticAnalyzer = new SemanticAnalyzer(symbolTable);
-   public static void main(String args[]) throws ParseException {
-    System.out.println("CL Parser - Milestone 1");
-    try {
-        java.io.InputStream input = (args.length > 0)
-            ? new java.io.FileInputStream(args[0])
-            : System.in;
-        MyNewGrammar parser = new MyNewGrammar(input);
-        SimpleNode root = parser.Start();
-        System.out.println("\nSUCCESS: Code parsed successfully!");
-        System.out.println("\n--- PARSE TREE ---");
-        root.dump("  ");
-        parser.semanticAnalyzer.printSummary();  // ← fix this line
-    } catch (java.io.FileNotFoundException e) {
-        System.out.println("ERROR: File not found - " + e.getMessage());
-    } catch (Exception e) {
-        System.out.println("\nERROR: " + e.getMessage());
-        e.printStackTrace();
+    public IRGenerator irGenerator = new IRGenerator();
+
+    public static void main(String args[]) throws ParseException {
+        System.out.println("CL Parser - Milestone 2");
+        try {
+            java.io.InputStream input = (args.length > 0)
+                ? new java.io.FileInputStream(args[0])
+                : System.in;
+
+            MyNewGrammar parser = new MyNewGrammar(input);
+
+            /* Parse and get root of parse tree */
+            SimpleNode root = parser.Start();
+
+            System.out.println("\nSUCCESS: Code parsed successfully!");
+
+            /* Print parse tree */
+            System.out.println("\n--- PARSE TREE ---");
+            root.dump("  ");
+
+            /* Print semantic summary */
+            parser.semanticAnalyzer.printSummary();
+
+            /* Print original IR */
+            parser.irGenerator.printIR();
+
+            /* --- MILESTONE 2: OPTIMIZATION --- */
+            Optimizer optimizer = new Optimizer(parser.irGenerator.getQuadruples());
+            optimizer.optimize();
+            optimizer.printOptimized();
+
+            /* --- MILESTONE 2: TARGET CODE GENERATION --- */
+            TargetCodeGenerator codeGen = new TargetCodeGenerator(
+                optimizer.getOptimizedInstructions()
+            );
+            codeGen.generate();
+            codeGen.printAssembly();
+
+        } catch (java.io.FileNotFoundException e) {
+            System.out.println("ERROR: File not found - " + e.getMessage());
+        } catch (Exception e) {
+            System.out.println("\nERROR: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
-
-}
 PARSER_END(MyNewGrammar)
+
+/* ============================= */
+/*   SKIP - Ignore Whitespace    */
+/* ============================= */
 SKIP : {
-    " "
-    | "\r"
-    | "\t"
-    | "\n"
+    " " | "\r" | "\t" | "\n"
 }
+
+
+/* ============================= */
+/*           TOKENS              */
+/* ============================= */
 TOKEN : {
       < START_PROG:   "startProgram"  >
     | < END_PROG:     "endProgram"    >
     | < VAR_SECTION:  "variables:"    >
     | < CODE_SECTION: "code:"         >
     | < INT_TYPE:     "int"           >
+    | < FLOAT_TYPE:   "float"         >
+    | < CHAR_TYPE:    "char"          >
     | < STRING_TYPE:  "string"        >
     | < LOOPIF:       "loopif"        >
     | < HOLDS:        "holds"         >
@@ -52,95 +87,201 @@ TOKEN : {
     | < CASE:         "case"          >
     | < OTHER:        "other"         >
     | < OUTSTRING:    "outString"     >
-    | < SEMICOLON: ";" >
-    | < COLON:     ":" >
-    | < LPAREN:    "(" >
-    | < RPAREN:    ")" >
-    | < PLUS:  "+" >
-    | < MINUS: "-" >
-    | < MULT:  "*" >
-    | < DIV:   "/" >
-    | < EQUALS: "==" >
-    | < LE:     "<=" >
-    | < GE:     ">=" >
-    | < NE:     "<>" >
-    | < LT:     "<"  >
-    | < GT:     ">"  >
-    | < ASSIGN: "=" >
-    | < NUMBER: ( ["0"-"9"] )+ >
-    | < STRING_LITERAL: "\"" ( ~["\"", "\n", "\r"] )* "\"" >
-    | < ID: ["a"-"z","A"-"Z"] ( ["a"-"z","A"-"Z","0"-"9"] )* >
+    | < SEMICOLON:    ";"             >
+    | < COLON:        ":"             >
+    | < LPAREN:       "("             >
+    | < RPAREN:       ")"             >
+    | < PLUS:         "+"             >
+    | < MINUS:        "-"             >
+    | < MULT:         "*"             >
+    | < DIV:          "/"             >
+    /* Multi-char relational ops BEFORE single-char */
+    | < EQUALS:       "=="            >
+    | < LE:           "<="            >
+    | < GE:           ">="            >
+    | < NE:           "<>"            >
+    | < LT:           "<"             >
+    | < GT:           ">"             >
+    /* ASSIGN after EQUALS */
+    | < ASSIGN:       "="             >
+    /* FLOAT before NUMBER so 3.14 is not split */
+    | < FLOAT_NUMBER: (["0"-"9"])+ "." (["0"-"9"])+ >
+    | < NUMBER:       (["0"-"9"])+    >
+    | < STRING_LITERAL: "\"" (~["\"","\n","\r"])* "\"" >
+    | < CHAR_LITERAL:   "'" (~["'","\n","\r"]) "'"     >
+    | < ID: ["a"-"z","A"-"Z"] (["a"-"z","A"-"Z","0"-"9"])* >
 }
 
 
+/* ============================= */
+/*        GRAMMAR RULES          */
+/* ============================= */
+
+/*
+ * Start - Root of the parse tree
+ * Returns SimpleNode so main() can call root.dump()
+ */
 SimpleNode Start() : {}
 {
-   <START_PROG>
+    <START_PROG>
     VariablesBlock()
     CodeBlock()
     <END_PROG>
     <EOF>
-    { return jjtThis; }   
+    { return jjtThis; }
 }
 
+
+/*
+ * VariablesBlock - variables: section
+ */
 void VariablesBlock() : {}
 {
     <VAR_SECTION>
     ( Declaration() )*
 }
 
+
+/*
+ * Declaration - single variable declaration
+ *
+ * FIX: Now emits IR instruction for the declaration.
+ * Example IR: (=, 3, , abc)  means  abc = 3
+ */
 void Declaration() : { Token t; Token id; Token val; }
 {
-    ( t = <INT_TYPE> | t = <STRING_TYPE> )
+    ( t = <INT_TYPE> | t = <FLOAT_TYPE> | t = <STRING_TYPE> | t = <CHAR_TYPE> )
     id = <ID>
     <ASSIGN>
-    ( val = <NUMBER> | val = <STRING_LITERAL> )
+    ( val = <NUMBER> | val = <FLOAT_NUMBER> | val = <STRING_LITERAL> | val = <CHAR_LITERAL> )
     <SEMICOLON>
-    { semanticAnalyzer.declareVariable(id.image, t.image, val.image); }
+    {
+        /* Register in symbol table via semantic analyser */
+        semanticAnalyzer.declareVariable(id.image, t.image, val.image);
+
+        /* FIX: Emit IR for declaration - was missing before */
+        irGenerator.emit("=", val.image, "", id.image);
+    }
 }
 
+
+/*
+ * CodeBlock - code: section
+ */
 void CodeBlock() : {}
 {
     <CODE_SECTION>
     ( Statement() )*
 }
+
+
+/*
+ * Statement - routes to correct statement type
+ */
 void Statement() : {}
 {
-    LOOKAHEAD(2) Assignment()
-    | LoopIf()
-    | SwitchFor()
-    | OutString()
+    LOOKAHEAD(<ID> <ASSIGN>) Assignment()
+    | LOOKAHEAD(<LOOPIF>)    LoopIf()
+    | LOOKAHEAD(<SWITCHFOR>) SwitchFor()
+    | LOOKAHEAD(<OUTSTRING>) OutString()
 }
-void Assignment() : { Token id; }
+/*
+ * Assignment - variable = expression
+ * IR: emits (=, exprResult, , varName)
+ */
+void Assignment() : { Token id; String exprResult; }
 {
     id = <ID>
     { semanticAnalyzer.checkAssignment(id.image); }
     <ASSIGN>
-    Expression()
+    exprResult = Expression()
     <SEMICOLON>
+    {
+        irGenerator.emit("=", exprResult, "", id.image);
+    }
 }
-void OutString() : {}
+
+
+/*
+ * OutString - outString(expr) or outString("string")
+ *
+ * FIX: Expression() return value was being discarded before.
+ * Now captured and emitted as a PRINT instruction.
+ */
+void OutString() : { String res; Token t; }
 {
     <OUTSTRING>
     <LPAREN>
-    ( LOOKAHEAD(2) Expression() | <STRING_LITERAL> )
+    (
+        LOOKAHEAD(2)
+        res = Expression()
+        { irGenerator.emit("print", res, "", ""); }
+        |
+        t = <STRING_LITERAL>
+        { irGenerator.emit("print", t.image, "", ""); }
+    )
     <RPAREN>
     <SEMICOLON>
 }
-void LoopIf() : {}
+
+
+/*
+ * LoopIf - loopif condition holds ... endloop
+ *
+ * FIX: Now generates proper loop IR with labels and goto.
+ *
+ * IR generated:
+ *   label  L1             <- loop start label
+ *   <op>   left  right  t1  <- condition evaluation
+ *   ifFalse t1    L1_end  <- exit loop if condition false
+ *   ... body statements ...
+ *   goto   L1             <- jump back to start
+ *   label  L1_end         <- loop end label
+ */
+void LoopIf() : { String condResult; String loopLabel; String endLabel; }
 {
-    <LOOPIF>
-    Condition()
+    {
+        /* Generate loop labels BEFORE parsing condition */
+        loopLabel = "L" + irGenerator.newTemp();
+        endLabel  = loopLabel + "_end";
+        irGenerator.emit("label", loopLabel, "", "");
+    }
+    condResult = Condition()
+    {
+        /* If condition is false, jump to end of loop */
+        irGenerator.emit("ifFalse", condResult, "", endLabel);
+    }
     <HOLDS>
     ( LoopIfBody() )+
     <ENDLOOP>
+    {
+        /* Jump back to loop start to recheck condition */
+        irGenerator.emit("goto", "", "", loopLabel);
+        irGenerator.emit("label", endLabel, "", "");
+    }
 }
+
+
+/*
+ * LoopIfBody - only Assignment and OutString inside loop
+ * Enforces no-nesting rule from PDF
+ */
 void LoopIfBody() : {}
 {
     LOOKAHEAD(2) Assignment()
     | OutString()
 }
 
+
+/*
+ * SwitchFor - switchFor(var) case ... other ... endswitchFor
+ *
+ * IR generated:
+ *   switch  varName
+ *   case    value
+ *   ... assignment ...
+ *   endswitch
+ */
 void SwitchFor() : { Token id; }
 {
     <SWITCHFOR>
@@ -148,38 +289,125 @@ void SwitchFor() : { Token id; }
     id = <ID>
     { semanticAnalyzer.checkVariableDeclared(id.image); }
     <RPAREN>
-    ( <CASE> ( <NUMBER> | <STRING_LITERAL> ) <COLON> SwitchBody() )+
+    { irGenerator.emit("switch", id.image, "", ""); }
+    (
+        <CASE>
+        ( <NUMBER> | <FLOAT_NUMBER> | <STRING_LITERAL> | <CHAR_LITERAL> )
+        <COLON>
+        SwitchBody()
+    )+
     <OTHER> <COLON> SwitchBody()
     <ENDSWITCH>
+    { irGenerator.emit("endswitch", "", "", ""); }
 }
+
+
+/*
+ * SwitchBody - statements inside a case or other branch
+ * No nesting allowed
+ */
 void SwitchBody() : {}
 {
     ( LOOKAHEAD(2) Assignment() | OutString() )+
 }
 
-void Condition() : {}
+
+/*
+ * Condition - conditional expression used in loopif
+ *
+ * FIX: Now captures both Expression() results and the operator.
+ * Emits a comparison IR instruction.
+ * Returns the temp variable holding the boolean result.
+ *
+ * IR example for "num > 0":
+ *   (>, num, 0, t1)
+ */
+String Condition() : { String left, right; Token op; String res; }
 {
-    Expression()
-    ( <EQUALS> | <LE> | <GE> | <NE> | <LT> | <GT> )
-    Expression()
+    left = Expression()
+    ( op=<EQUALS> | op=<LE> | op=<GE> | op=<NE> | op=<LT> | op=<GT> )
+    right = Expression()
+    {
+        res = irGenerator.newTemp();
+        irGenerator.emit(op.image, left, right, res);
+        return res;
+    }
 }
 
-void Expression() : {}
+
+/*
+ * Expression - addition and subtraction (lowest precedence)
+ *
+ * Returns the temp variable or operand holding the result.
+ * IR example for "abc + xyz":
+ *   (+, abc, xyz, t1)
+ */
+String Expression() : { String t1, t2; Token op; }
 {
-    Term()
-    ( ( <PLUS> | <MINUS> ) Term() )*
+    t1 = Term()
+    (
+        ( op=<PLUS> | op=<MINUS> )
+        t2 = Term()
+        {
+            String res = irGenerator.newTemp();
+            irGenerator.emit(op.image, t1, t2, res);
+            t1 = res;
+        }
+    )*
+    { return t1; }
 }
 
-void Term() : {}
+
+/*
+ * Term - multiplication and division (higher precedence)
+ *
+ * Returns the temp variable or operand holding the result.
+ * IR example for "fact * num":
+ *   (*, fact, num, t1)
+ */
+String Term() : { String t1, t2; Token op; }
 {
-    Factor()
-    ( ( <MULT> | <DIV> ) Factor() )*
+    t1 = Factor()
+    (
+        ( op=<MULT> | op=<DIV> )
+        t2 = Factor()
+        {
+            String res = irGenerator.newTemp();
+            irGenerator.emit(op.image, t1, t2, res);
+            t1 = res;
+        }
+    )*
+    { return t1; }
 }
 
-void Factor() : { Token t; }
+
+/*
+ * Factor - a single unit in an expression
+ *
+ * Returns the actual value string (variable name or literal).
+ * No IR emitted here — the value is passed up to Expression/Term.
+ */
+String Factor() : { Token t; String res; }
 {
-    <NUMBER>
-    | t = <ID> { semanticAnalyzer.checkVariableDeclared(t.image); }
-    | <STRING_LITERAL>
-    | <LPAREN> Expression() <RPAREN>
+    t = <NUMBER>
+    { return t.image; }
+
+    | t = <FLOAT_NUMBER>
+    { return t.image; }
+
+    | t = <ID>
+    {
+        semanticAnalyzer.checkVariableDeclared(t.image);
+        return t.image;
+    }
+
+    | t = <STRING_LITERAL>
+    { return t.image; }
+
+    | t = <CHAR_LITERAL>
+    { return t.image; }
+
+    | <LPAREN> res = Expression() <RPAREN>
+    { return res; }
 }
+

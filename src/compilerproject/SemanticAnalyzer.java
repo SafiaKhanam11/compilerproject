@@ -9,23 +9,35 @@ public class SemanticAnalyzer {
         this.symbolTable = symbolTable;
     }
 
+    /**
+     * Requirement: Check if variable type is supported (int, float, string, or char).
+     * Requirement: Match assigned value to declared type.
+     */
     public boolean declareVariable(String name, String type, String value) {
-        if (!type.equals("int") && !type.equals("string")) {
-            System.out.println("Semantic Error: Unsupported type '" + type + 
-                               "' for variable '" + name + "'");
-            errorCount++;
+        // 1. Check for Unsupported Types (Now including float and char) 
+        if (!type.equals("int") && !type.equals("string") && 
+            !type.equals("float") && !type.equals("char")) {
+            reportError("Unsupported type '" + type + "' for variable '" + name + "'");
             return false;
         }
+
+        // 2. Check for Type Mismatches 
         if (type.equals("int") && !value.matches("[0-9]+")) {
-            System.out.println("Semantic Error: Type mismatch - variable '" + name + 
-                               "' is int but assigned string value " + value);
-            errorCount++;
+            reportError("Type mismatch: '" + name + "' is int but assigned " + value);
+            return false;
+        } 
+        else if (type.equals("float") && !value.matches("[0-9]*\\.[0-9]+")) {
+            reportError("Type mismatch: '" + name + "' is float but assigned " + value);
+            return false;
+        } 
+        else if (type.equals("char") && !value.matches("'.{1}'")) {
+            reportError("Type mismatch: '" + name + "' is char but assigned " + value);
             return false;
         }
+
+        // 3. Check for Duplicate Declarations [cite: 550]
         if (symbolTable.contains(name)) {
-            System.out.println("Semantic Error: Variable '" + name + 
-                               "' already declared.");
-            errorCount++;
+            reportError("Variable '" + name + "' already declared.");
             return false;
         }
        
@@ -33,40 +45,34 @@ public class SemanticAnalyzer {
         System.out.println("  [SA] Declared: " + name + " (" + type + ") = " + value);
         return true;
     }
+
+    /**
+     * Requirement: Verify variable is declared before usage[cite: 553].
+     */
     public boolean checkVariableDeclared(String name) {
         if (!symbolTable.contains(name)) {
-            System.out.println("Semantic Error: Variable '" + name + 
-                               "' used before declaration.");
-            errorCount++;
+            reportError("Variable '" + name + "' used before declaration.");
             return false;
         }
         return true;
     }
+
+    /**
+     * Requirement: Verify assignment targets are declared[cite: 557].
+     */
     public boolean checkAssignment(String name) {
         if (!symbolTable.contains(name)) {
-            System.out.println("Semantic Error: Cannot assign to undeclared variable '" + 
-                               name + "'");
-            errorCount++;
+            reportError("Cannot assign to undeclared variable '" + name + "'");
             return false;
         }
         return true;
     }
-    public boolean checkType(String name, String expectedType) {
-        SymbolTable.SymbolInfo info = symbolTable.lookup(name);
-        if (info == null) {
-            System.out.println("Semantic Error: Variable '" + name + "' not found.");
-            errorCount++;
-            return false;
-        }
-        if (!info.type.equals(expectedType)) {
-            System.out.println("Semantic Error: Type mismatch for '" + name + 
-                               "'. Expected " + expectedType + 
-                               " but found " + info.type);
-            errorCount++;
-            return false;
-        }
-        return true;
+    
+    private void reportError(String message) {
+        System.out.println("Semantic Error: " + message);
+        errorCount++;
     }
+
     public void printSummary() {
         System.out.println("\n--- SEMANTIC ANALYSIS SUMMARY ---");
         if (errorCount == 0) {

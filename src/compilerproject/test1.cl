@@ -1,7 +1,7 @@
 startProgram
     variables:
         int a = 10;
-        int b = 3;
+        int b = 3.5;
         int result = 0;
     code:
         result = a + b;

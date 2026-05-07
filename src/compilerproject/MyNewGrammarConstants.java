@@ -21,59 +21,67 @@ public interface MyNewGrammarConstants {
   /** RegularExpression Id. */
   int INT_TYPE = 9;
   /** RegularExpression Id. */
-  int STRING_TYPE = 10;
+  int FLOAT_TYPE = 10;
   /** RegularExpression Id. */
-  int LOOPIF = 11;
+  int CHAR_TYPE = 11;
   /** RegularExpression Id. */
-  int HOLDS = 12;
+  int STRING_TYPE = 12;
   /** RegularExpression Id. */
-  int ENDLOOP = 13;
+  int LOOPIF = 13;
   /** RegularExpression Id. */
-  int SWITCHFOR = 14;
+  int HOLDS = 14;
   /** RegularExpression Id. */
-  int ENDSWITCH = 15;
+  int ENDLOOP = 15;
   /** RegularExpression Id. */
-  int CASE = 16;
+  int SWITCHFOR = 16;
   /** RegularExpression Id. */
-  int OTHER = 17;
+  int ENDSWITCH = 17;
   /** RegularExpression Id. */
-  int OUTSTRING = 18;
+  int CASE = 18;
   /** RegularExpression Id. */
-  int SEMICOLON = 19;
+  int OTHER = 19;
   /** RegularExpression Id. */
-  int COLON = 20;
+  int OUTSTRING = 20;
   /** RegularExpression Id. */
-  int LPAREN = 21;
+  int SEMICOLON = 21;
   /** RegularExpression Id. */
-  int RPAREN = 22;
+  int COLON = 22;
   /** RegularExpression Id. */
-  int PLUS = 23;
+  int LPAREN = 23;
   /** RegularExpression Id. */
-  int MINUS = 24;
+  int RPAREN = 24;
   /** RegularExpression Id. */
-  int MULT = 25;
+  int PLUS = 25;
   /** RegularExpression Id. */
-  int DIV = 26;
+  int MINUS = 26;
   /** RegularExpression Id. */
-  int EQUALS = 27;
+  int MULT = 27;
   /** RegularExpression Id. */
-  int LE = 28;
+  int DIV = 28;
   /** RegularExpression Id. */
-  int GE = 29;
+  int EQUALS = 29;
   /** RegularExpression Id. */
-  int NE = 30;
+  int LE = 30;
   /** RegularExpression Id. */
-  int LT = 31;
+  int GE = 31;
   /** RegularExpression Id. */
-  int GT = 32;
+  int NE = 32;
   /** RegularExpression Id. */
-  int ASSIGN = 33;
+  int LT = 33;
   /** RegularExpression Id. */
-  int NUMBER = 34;
+  int GT = 34;
   /** RegularExpression Id. */
-  int STRING_LITERAL = 35;
+  int ASSIGN = 35;
   /** RegularExpression Id. */
-  int ID = 36;
+  int FLOAT_NUMBER = 36;
+  /** RegularExpression Id. */
+  int NUMBER = 37;
+  /** RegularExpression Id. */
+  int STRING_LITERAL = 38;
+  /** RegularExpression Id. */
+  int CHAR_LITERAL = 39;
+  /** RegularExpression Id. */
+  int ID = 40;
 
   /** Lexical state. */
   int DEFAULT = 0;
@@ -90,6 +98,8 @@ public interface MyNewGrammarConstants {
     "\"variables:\"",
     "\"code:\"",
     "\"int\"",
+    "\"float\"",
+    "\"char\"",
     "\"string\"",
     "\"loopif\"",
     "\"holds\"",
@@ -114,8 +124,10 @@ public interface MyNewGrammarConstants {
     "\"<\"",
     "\">\"",
     "\"=\"",
+    "<FLOAT_NUMBER>",
     "<NUMBER>",
     "<STRING_LITERAL>",
+    "<CHAR_LITERAL>",
     "<ID>",
   };
 
