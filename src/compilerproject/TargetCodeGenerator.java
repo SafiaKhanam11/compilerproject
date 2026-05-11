@@ -2,16 +2,6 @@ package compilerproject;
 
 import java.util.ArrayList;
 
-/**
- * TargetCodeGenerator - Milestone 2
- * Translates optimized IR (quadruples) into CISC assembly code.
- *
- * Pattern from PDF:
- *   a = b + c  →
- *     LD  R0, b
- *     ADD R0, R0, c
- *     ST  a,  R0
- */
 public class TargetCodeGenerator {
 
     private ArrayList<IRGenerator.Quadruple> instructions;
@@ -22,10 +12,6 @@ public class TargetCodeGenerator {
         this.assembly = new ArrayList<>();
     }
 
-    /**
-     * Translate all IR instructions to assembly.
-     * Call this after Optimizer.optimize().
-     */
     public void generate() {
         assembly.clear();
 
@@ -77,14 +63,14 @@ public class TargetCodeGenerator {
                 /* ── Conditional jump (ifFalse) ── */
                 case "ifFalse":
                     emit("LD  R0, " + q.arg1);
-                    emit("JF  R0, " + q.result);   // jump if false to label
+                    emit("JF  R0, " + q.result);   
                     break;
 
                 /* ── Comparison operators ── */
                 case "==":
                     emit("LD  R0, " + q.arg1);
                     emit("CMP R0, " + q.arg2);
-                    emit("SEQ " + q.result);        // set result 1 if equal
+                    emit("SEQ " + q.result);       
                     break;
 
                 case "<":

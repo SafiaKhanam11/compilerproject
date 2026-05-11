@@ -9,10 +9,6 @@ public class SemanticAnalyzer {
         this.symbolTable = symbolTable;
     }
 
-    /**
-     * Requirement: Check if variable type is supported (int, float, string, or char).
-     * Requirement: Match assigned value to declared type.
-     */
     public boolean declareVariable(String name, String type, String value) {
         // 1. Check for Unsupported Types (Now including float and char) 
         if (!type.equals("int") && !type.equals("string") && 

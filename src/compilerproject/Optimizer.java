@@ -2,29 +2,6 @@ package compilerproject;
 
 import java.util.ArrayList;
 
-/**
- * Optimizer - Milestone 2
- * Member 5: Code Optimizer
- *
- * Receives the IR (Three-Address Code) from IRGenerator
- * and performs algebraic simplification as required by the PDF.
- *
- * Optimizations performed:
- *
- * 1. Remove identity operations:
- *    X = X + 0  →  removed entirely
- *    X = X * 1  →  removed entirely
- *    X = X - 0  →  removed entirely
- *    X = X / 1  →  removed entirely
- *
- * 2. Remove redundant temporaries:
- *    T1 = X * 13       can be collapsed to
- *    X  = T1           →   X = X * 13
- *
- * 3. Constant folding:
- *    T1 = 3 + 4        →   T1 = 7  (computed at compile time)
- *    T1 = 2 * 5        →   T1 = 10
- */
 public class Optimizer {
 
     private ArrayList<IRGenerator.Quadruple> original;
@@ -63,17 +40,7 @@ public class Optimizer {
         System.out.println("[Optimizer] Instructions removed: " + removed);
     }
 
-    /* ============================================================ */
-    /*  Optimization 1: Remove Identity Operations                  */
-    /*                                                              */
-    /*  X = X + 0  → remove                                        */
-    /*  X = X - 0  → remove                                        */
-    /*  X = X * 1  → remove                                        */
-    /*  X = X / 1  → remove                                        */
-    /*                                                              */
-    /*  From PDF: "X = X * 1 can simply be removed as it won't     */
-    /*  change the state of the program at that point."            */
-    /* ============================================================ */
+
     private void removeIdentityOperations() {
         ArrayList<IRGenerator.Quadruple> pass = new ArrayList<>();
 
@@ -99,12 +66,7 @@ public class Optimizer {
                     + q.result + " = " + q.arg1 + " " + q.op + " " + q.arg2);
             }
 
-            /* Also catch the pattern where result is a temp
-             * e.g.  t1 = x + 0   or   t1 = x * 1
-             * where the temp is immediately assigned back to x
-             * This is handled by removeRedundantTemporaries() below
-             * but we catch the pure case here too.
-             */
+          
             if ((q.op.equals("+") || q.op.equals("-"))
                     && isZero(q.arg2)) {
                 /* t1 = x + 0 → just use x directly, skip this instruction */
@@ -135,15 +97,6 @@ public class Optimizer {
         optimized = pass;
     }
 
-    /* ============================================================ */
-    /*  Optimization 2: Remove Redundant Temporaries               */
-    /*                                                              */
-    /*  T1 = X * 13                                                 */
-    /*  X  = T1          →   X = X * 13                            */
-    /*                                                              */
-    /*  From PDF: "You can remove the temporary variable            */
-    /*  introduced for assignment statement by the IR generator."  */
-    /* ============================================================ */
     private void removeRedundantTemporaries() {
         ArrayList<IRGenerator.Quadruple> pass = new ArrayList<>();
         int i = 0;
@@ -151,11 +104,6 @@ public class Optimizer {
         while (i < optimized.size()) {
             IRGenerator.Quadruple current = optimized.get(i);
 
-            /*
-             * Look for pattern:
-             *   current:  OP   arg1  arg2  tempVar    (result is a temp)
-             *   next:     =    tempVar  ""  realVar   (assigning temp to real var)
-             */
             if (i + 1 < optimized.size()) {
                 IRGenerator.Quadruple next = optimized.get(i + 1);
 
@@ -192,14 +140,6 @@ public class Optimizer {
         optimized = pass;
     }
 
-    /* ============================================================ */
-    /*  Optimization 3: Constant Folding                           */
-    /*                                                              */
-    /*  T1 = 3 + 4   →   T1 = 7   (computed at compile time)      */
-    /*  T1 = 2 * 5   →   T1 = 10                                   */
-    /*                                                              */
-    /*  Only applies when BOTH operands are numeric constants.     */
-    /* ============================================================ */
     private void constantFolding() {
         ArrayList<IRGenerator.Quadruple> pass = new ArrayList<>();
 
@@ -260,9 +200,6 @@ public class Optimizer {
         optimized = pass;
     }
 
-    /* ============================================================ */
-    /*  Helper Methods                                              */
-    /* ============================================================ */
 
     /** Check if a string is a temporary variable (starts with 't' + digit) */
     private boolean isTemp(String s) {
@@ -293,11 +230,6 @@ public class Optimizer {
         catch (NumberFormatException e) { return false; }
     }
 
-    /**
-     * Replace all occurrences of oldOperand with newOperand
-     * in the already-processed instructions list.
-     * Used when we remove a temp variable.
-     */
     private void replaceOperand(ArrayList<IRGenerator.Quadruple> list,
                                  String oldOperand, String newOperand) {
         for (IRGenerator.Quadruple q : list) {
@@ -307,14 +239,6 @@ public class Optimizer {
         }
     }
 
-    /* ============================================================ */
-    /*  Output Methods                                              */
-    /* ============================================================ */
-
-    /**
-     * Print the optimized IR in the same quadruple table format
-     * as IRGenerator.printIR() for easy comparison.
-     */
     public void printOptimized() {
         if (optimized.isEmpty()) {
             System.out.println("No instructions after optimization.");
@@ -337,9 +261,6 @@ public class Optimizer {
         System.out.println("==============================================");
     }
 
-    /**
-     * Return optimized instructions (used by CodeGenerator).
-     */
     public ArrayList<IRGenerator.Quadruple> getOptimizedInstructions() {
         return optimized;
     }
