@@ -7,17 +7,15 @@ public interface MyNewGrammarTreeConstants
   public int JJTVARIABLESBLOCK = 1;
   public int JJTDECLARATION = 2;
   public int JJTCODEBLOCK = 3;
-  public int JJTSTATEMENT = 4;
+  public int JJTVOID = 4;
   public int JJTASSIGNMENT = 5;
   public int JJTOUTSTRING = 6;
   public int JJTLOOPIF = 7;
-  public int JJTLOOPIFBODY = 8;
-  public int JJTSWITCHFOR = 9;
-  public int JJTSWITCHBODY = 10;
-  public int JJTCONDITION = 11;
-  public int JJTEXPRESSION = 12;
-  public int JJTTERM = 13;
-  public int JJTFACTOR = 14;
+  public int JJTSWITCHFOR = 8;
+  public int JJTCONDITION = 9;
+  public int JJTEXPRESSION = 10;
+  public int JJTTERM = 11;
+  public int JJTFACTOR = 12;
 
 
   public String[] jjtNodeName = {
@@ -25,17 +23,15 @@ public interface MyNewGrammarTreeConstants
     "VariablesBlock",
     "Declaration",
     "CodeBlock",
-    "Statement",
+    "void",
     "Assignment",
     "OutString",
     "LoopIf",
-    "LoopIfBody",
     "SwitchFor",
-    "SwitchBody",
     "Condition",
     "Expression",
     "Term",
     "Factor",
   };
 }
-/* JavaCC - OriginalChecksum=10d39f99ab765a07a9c9f0d9a41905e0 (do not edit this line) */
+/* JavaCC - OriginalChecksum=bea8d6fbbab40761451ae395e9660117 (do not edit this line) */

@@ -2,6 +2,9 @@
 /*@egen*/options {
     STATIC = false;
     LOOKAHEAD = 1;
+                 
+                    
+                              
 }
 
 PARSER_BEGIN(MyNewGrammar)
@@ -41,12 +44,12 @@ public class MyNewGrammar/*@bgen(jjtree)*/implements MyNewGrammarTreeConstants/*
             /* Print original IR */
             parser.irGenerator.printIR();
 
-            /* --- MILESTONE 2: OPTIMIZATION --- */
+            /* Optimization */
             Optimizer optimizer = new Optimizer(parser.irGenerator.getQuadruples());
             optimizer.optimize();
             optimizer.printOptimized();
 
-            /* --- MILESTONE 2: TARGET CODE GENERATION --- */
+            /* Target Code Generation */
             TargetCodeGenerator codeGen = new TargetCodeGenerator(
                 optimizer.getOptimizedInstructions()
             );
@@ -54,14 +57,20 @@ public class MyNewGrammar/*@bgen(jjtree)*/implements MyNewGrammarTreeConstants/*
             codeGen.printAssembly();
 
         } catch (java.io.FileNotFoundException e) {
-            System.out.println("ERROR: File not found - " + e.getMessage());
-        } catch (Exception e) {
-            System.out.println("\nERROR: " + e.getMessage());
-            e.printStackTrace();
-        }
+    System.out.println("ERROR: File not found - " + e.getMessage());
+
+} catch (ParseException e) {
+    System.out.println("\nSYNTAX ERROR:");
+    System.out.println(e.getMessage());
+
+} catch (Exception e) {
+    System.out.println("\nSYSTEM ERROR:");
+    System.out.println(e.getMessage());
+}
     }
 }
 PARSER_END(MyNewGrammar)
+
 
 /* ============================= */
 /*   SKIP - Ignore Whitespace    */
@@ -99,16 +108,13 @@ TOKEN : {
     | < MINUS:        "-"             >
     | < MULT:         "*"             >
     | < DIV:          "/"             >
-    /* Multi-char relational ops BEFORE single-char */
     | < EQUALS:       "=="            >
     | < LE:           "<="            >
     | < GE:           ">="            >
     | < NE:           "<>"            >
     | < LT:           "<"             >
     | < GT:           ">"             >
-    /* ASSIGN after EQUALS */
     | < ASSIGN:       "="             >
-    /* FLOAT before NUMBER so 3.14 is not split */
     | < FLOAT_NUMBER: (["0"-"9"])+ "." (["0"-"9"])+ >
     | < NUMBER:       (["0"-"9"])+    >
     | < STRING_LITERAL: "\"" (~["\"","\n","\r"])* "\"" >
@@ -121,12 +127,8 @@ TOKEN : {
 /*        GRAMMAR RULES          */
 /* ============================= */
 
-/*
- * Start - Root of the parse tree
- * Returns SimpleNode so main() can call root.dump()
- */
 SimpleNode Start() : {/*@bgen(jjtree) Start */
-  SimpleNode jjtn000 = new SimpleNode(JJTSTART);
+  ASTStart jjtn000 = new ASTStart(JJTSTART);
   boolean jjtc000 = true;
   jjtree.openNodeScope(jjtn000);
 /*@egen*/}
@@ -166,12 +168,8 @@ SimpleNode Start() : {/*@bgen(jjtree) Start */
 /*@egen*/
 }
 
-
-/*
- * VariablesBlock - variables: section
- */
 void VariablesBlock() : {/*@bgen(jjtree) VariablesBlock */
-  SimpleNode jjtn000 = new SimpleNode(JJTVARIABLESBLOCK);
+  ASTVariablesBlock jjtn000 = new ASTVariablesBlock(JJTVARIABLESBLOCK);
   boolean jjtc000 = true;
   jjtree.openNodeScope(jjtn000);
 /*@egen*/}
@@ -202,15 +200,8 @@ void VariablesBlock() : {/*@bgen(jjtree) VariablesBlock */
 /*@egen*/
 }
 
-
-/*
- * Declaration - single variable declaration
- *
- * FIX: Now emits IR instruction for the declaration.
- * Example IR: (=, 3, , abc)  means  abc = 3
- */
 void Declaration() : {/*@bgen(jjtree) Declaration */
-                       SimpleNode jjtn000 = new SimpleNode(JJTDECLARATION);
+                       ASTDeclaration jjtn000 = new ASTDeclaration(JJTDECLARATION);
                        boolean jjtc000 = true;
                        jjtree.openNodeScope(jjtn000);
 /*@egen*/ Token t; Token id; Token val; }
@@ -228,10 +219,7 @@ void Declaration() : {/*@bgen(jjtree) Declaration */
     }
 /*@egen*/
     {
-        /* Register in symbol table via semantic analyser */
         semanticAnalyzer.declareVariable(id.image, t.image, val.image);
-
-        /* FIX: Emit IR for declaration - was missing before */
         irGenerator.emit("=", val.image, "", id.image);
     }/*@bgen(jjtree)*/
     } finally {
@@ -242,12 +230,8 @@ void Declaration() : {/*@bgen(jjtree) Declaration */
 /*@egen*/
 }
 
-
-/*
- * CodeBlock - code: section
- */
 void CodeBlock() : {/*@bgen(jjtree) CodeBlock */
-  SimpleNode jjtn000 = new SimpleNode(JJTCODEBLOCK);
+  ASTCodeBlock jjtn000 = new ASTCodeBlock(JJTCODEBLOCK);
   boolean jjtc000 = true;
   jjtree.openNodeScope(jjtn000);
 /*@egen*/}
@@ -278,49 +262,20 @@ void CodeBlock() : {/*@bgen(jjtree) CodeBlock */
 /*@egen*/
 }
 
-
 /*
- * Statement - routes to correct statement type
+ * FIX 1: #void prevents JJTree from creating a node for Statement.
+ * Without #void, JJTree wraps the alternatives in a node object
+ * which breaks the choice between LoopIf/SwitchFor/Assignment.
  */
-void Statement() : {/*@bgen(jjtree) Statement */
-  SimpleNode jjtn000 = new SimpleNode(JJTSTATEMENT);
-  boolean jjtc000 = true;
-  jjtree.openNodeScope(jjtn000);
-/*@egen*/}
-{/*@bgen(jjtree) Statement */
-    try {
-/*@egen*/
-    LOOKAHEAD(<ID> <ASSIGN>) Assignment()
-    | LOOKAHEAD(<LOOPIF>)    LoopIf()
+void Statement()       : {}
+{
+      LOOKAHEAD(<ID>) Assignment()
+    | LOOKAHEAD(<LOOPIF>) LoopIf()
     | LOOKAHEAD(<SWITCHFOR>) SwitchFor()
-    | LOOKAHEAD(<OUTSTRING>) OutString()/*@bgen(jjtree)*/
-    } catch (Throwable jjte000) {
-      if (jjtc000) {
-        jjtree.clearNodeScope(jjtn000);
-        jjtc000 = false;
-      } else {
-        jjtree.popNode();
-      }
-      if (jjte000 instanceof RuntimeException) {
-        throw (RuntimeException)jjte000;
-      }
-      if (jjte000 instanceof ParseException) {
-        throw (ParseException)jjte000;
-      }
-      throw (Error)jjte000;
-    } finally {
-      if (jjtc000) {
-        jjtree.closeNodeScope(jjtn000, true);
-      }
-    }
-/*@egen*/
+    | LOOKAHEAD(<OUTSTRING>) OutString()
 }
-/*
- * Assignment - variable = expression
- * IR: emits (=, exprResult, , varName)
- */
 void Assignment() : {/*@bgen(jjtree) Assignment */
-                      SimpleNode jjtn000 = new SimpleNode(JJTASSIGNMENT);
+                      ASTAssignment jjtn000 = new ASTAssignment(JJTASSIGNMENT);
                       boolean jjtc000 = true;
                       jjtree.openNodeScope(jjtn000);
 /*@egen*/ Token id; String exprResult; }
@@ -362,15 +317,8 @@ void Assignment() : {/*@bgen(jjtree) Assignment */
 /*@egen*/
 }
 
-
-/*
- * OutString - outString(expr) or outString("string")
- *
- * FIX: Expression() return value was being discarded before.
- * Now captured and emitted as a PRINT instruction.
- */
 void OutString() : {/*@bgen(jjtree) OutString */
-                     SimpleNode jjtn000 = new SimpleNode(JJTOUTSTRING);
+                     ASTOutString jjtn000 = new ASTOutString(JJTOUTSTRING);
                      boolean jjtc000 = true;
                      jjtree.openNodeScope(jjtn000);
 /*@egen*/ String res; Token t; }
@@ -411,49 +359,45 @@ void OutString() : {/*@bgen(jjtree) OutString */
 /*@egen*/
 }
 
-
 /*
- * LoopIf - loopif condition holds ... endloop
- *
- * FIX: Now generates proper loop IR with labels and goto.
- *
- * IR generated:
- *   label  L1             <- loop start label
- *   <op>   left  right  t1  <- condition evaluation
- *   ifFalse t1    L1_end  <- exit loop if condition false
- *   ... body statements ...
- *   goto   L1             <- jump back to start
- *   label  L1_end         <- loop end label
+ * FIX 2: LoopIf now uses irGenerator.newLabel() instead of newTemp()
+ * so loop labels (L1, L2) never clash with temp variables (t1, t2).
+ * This was causing the label collision bug.
  */
 void LoopIf() : {/*@bgen(jjtree) LoopIf */
-                  SimpleNode jjtn000 = new SimpleNode(JJTLOOPIF);
+                  ASTLoopIf jjtn000 = new ASTLoopIf(JJTLOOPIF);
                   boolean jjtc000 = true;
                   jjtree.openNodeScope(jjtn000);
 /*@egen*/ String condResult; String loopLabel; String endLabel; }
 {/*@bgen(jjtree) LoopIf */
     try {
 /*@egen*/
+    <LOOPIF>
+
     {
-        /* Generate loop labels BEFORE parsing condition */
-        loopLabel = "L" + irGenerator.newTemp();
+        loopLabel = irGenerator.newLabel();
         endLabel  = loopLabel + "_end";
         irGenerator.emit("label", loopLabel, "", "");
     }
+
     condResult = Condition()
+
     {
-        /* If condition is false, jump to end of loop */
         irGenerator.emit("ifFalse", condResult, "", endLabel);
     }
+
     <HOLDS>
+
     ( LoopIfBody() )+
+
     <ENDLOOP>/*@bgen(jjtree)*/
     {
       jjtree.closeNodeScope(jjtn000, true);
       jjtc000 = false;
     }
 /*@egen*/
+
     {
-        /* Jump back to loop start to recheck condition */
         irGenerator.emit("goto", "", "", loopLabel);
         irGenerator.emit("label", endLabel, "", "");
     }/*@bgen(jjtree)*/
@@ -479,58 +423,21 @@ void LoopIf() : {/*@bgen(jjtree) LoopIf */
 /*@egen*/
 }
 
-
 /*
- * LoopIfBody - only Assignment and OutString inside loop
- * Enforces no-nesting rule from PDF
+ * FIX 3: #void on LoopIfBody so JJTree does not wrap
+ * body statements in an extra node \u2014 they go directly under LoopIf.
  */
-void LoopIfBody() : {/*@bgen(jjtree) LoopIfBody */
-  SimpleNode jjtn000 = new SimpleNode(JJTLOOPIFBODY);
-  boolean jjtc000 = true;
-  jjtree.openNodeScope(jjtn000);
-/*@egen*/}
-{/*@bgen(jjtree) LoopIfBody */
-    try {
-/*@egen*/
+void LoopIfBody()       : {}
+{
     LOOKAHEAD(2) Assignment()
-    | OutString()/*@bgen(jjtree)*/
-    } catch (Throwable jjte000) {
-      if (jjtc000) {
-        jjtree.clearNodeScope(jjtn000);
-        jjtc000 = false;
-      } else {
-        jjtree.popNode();
-      }
-      if (jjte000 instanceof RuntimeException) {
-        throw (RuntimeException)jjte000;
-      }
-      if (jjte000 instanceof ParseException) {
-        throw (ParseException)jjte000;
-      }
-      throw (Error)jjte000;
-    } finally {
-      if (jjtc000) {
-        jjtree.closeNodeScope(jjtn000, true);
-      }
-    }
-/*@egen*/
+    | OutString()
 }
 
-
-/*
- * SwitchFor - switchFor(var) case ... other ... endswitchFor
- *
- * IR generated:
- *   switch  varName
- *   case    value
- *   ... assignment ...
- *   endswitch
- */
 void SwitchFor() : {/*@bgen(jjtree) SwitchFor */
-                     SimpleNode jjtn000 = new SimpleNode(JJTSWITCHFOR);
+                     ASTSwitchFor jjtn000 = new ASTSwitchFor(JJTSWITCHFOR);
                      boolean jjtc000 = true;
                      jjtree.openNodeScope(jjtn000);
-/*@egen*/ Token id; }
+/*@egen*/ Token id; Token caseVal; }
 {/*@bgen(jjtree) SwitchFor */
     try {
 /*@egen*/
@@ -542,11 +449,15 @@ void SwitchFor() : {/*@bgen(jjtree) SwitchFor */
     { irGenerator.emit("switch", id.image, "", ""); }
     (
         <CASE>
-        ( <NUMBER> | <FLOAT_NUMBER> | <STRING_LITERAL> | <CHAR_LITERAL> )
+        ( caseVal = <NUMBER> | caseVal = <FLOAT_NUMBER>
+        | caseVal = <STRING_LITERAL> | caseVal = <CHAR_LITERAL> )
         <COLON>
+        { irGenerator.emit("case", caseVal.image, "", ""); }
         SwitchBody()
     )+
-    <OTHER> <COLON> SwitchBody()
+    <OTHER> <COLON>
+    { irGenerator.emit("other", "", "", ""); }
+    SwitchBody()
     <ENDSWITCH>/*@bgen(jjtree)*/
     {
       jjtree.closeNodeScope(jjtn000, true);
@@ -576,55 +487,16 @@ void SwitchFor() : {/*@bgen(jjtree) SwitchFor */
 /*@egen*/
 }
 
-
 /*
- * SwitchBody - statements inside a case or other branch
- * No nesting allowed
+ * FIX 4: #void on SwitchBody for same reason as LoopIfBody.
  */
-void SwitchBody() : {/*@bgen(jjtree) SwitchBody */
-  SimpleNode jjtn000 = new SimpleNode(JJTSWITCHBODY);
-  boolean jjtc000 = true;
-  jjtree.openNodeScope(jjtn000);
-/*@egen*/}
-{/*@bgen(jjtree) SwitchBody */
-    try {
-/*@egen*/
-    ( LOOKAHEAD(2) Assignment() | OutString() )+/*@bgen(jjtree)*/
-    } catch (Throwable jjte000) {
-      if (jjtc000) {
-        jjtree.clearNodeScope(jjtn000);
-        jjtc000 = false;
-      } else {
-        jjtree.popNode();
-      }
-      if (jjte000 instanceof RuntimeException) {
-        throw (RuntimeException)jjte000;
-      }
-      if (jjte000 instanceof ParseException) {
-        throw (ParseException)jjte000;
-      }
-      throw (Error)jjte000;
-    } finally {
-      if (jjtc000) {
-        jjtree.closeNodeScope(jjtn000, true);
-      }
-    }
-/*@egen*/
+void SwitchBody()       : {}
+{
+    ( LOOKAHEAD(2) Assignment() | OutString() )+
 }
 
-
-/*
- * Condition - conditional expression used in loopif
- *
- * FIX: Now captures both Expression() results and the operator.
- * Emits a comparison IR instruction.
- * Returns the temp variable holding the boolean result.
- *
- * IR example for "num > 0":
- *   (>, num, 0, t1)
- */
 String Condition() : {/*@bgen(jjtree) Condition */
-                       SimpleNode jjtn000 = new SimpleNode(JJTCONDITION);
+                       ASTCondition jjtn000 = new ASTCondition(JJTCONDITION);
                        boolean jjtc000 = true;
                        jjtree.openNodeScope(jjtn000);
 /*@egen*/ String left, right; Token op; String res; }
@@ -666,16 +538,8 @@ String Condition() : {/*@bgen(jjtree) Condition */
 /*@egen*/
 }
 
-
-/*
- * Expression - addition and subtraction (lowest precedence)
- *
- * Returns the temp variable or operand holding the result.
- * IR example for "abc + xyz":
- *   (+, abc, xyz, t1)
- */
 String Expression() : {/*@bgen(jjtree) Expression */
-                        SimpleNode jjtn000 = new SimpleNode(JJTEXPRESSION);
+                        ASTExpression jjtn000 = new ASTExpression(JJTEXPRESSION);
                         boolean jjtc000 = true;
                         jjtree.openNodeScope(jjtn000);
 /*@egen*/ String t1, t2; Token op; }
@@ -720,16 +584,8 @@ String Expression() : {/*@bgen(jjtree) Expression */
 /*@egen*/
 }
 
-
-/*
- * Term - multiplication and division (higher precedence)
- *
- * Returns the temp variable or operand holding the result.
- * IR example for "fact * num":
- *   (*, fact, num, t1)
- */
 String Term() : {/*@bgen(jjtree) Term */
-                  SimpleNode jjtn000 = new SimpleNode(JJTTERM);
+                  ASTTerm jjtn000 = new ASTTerm(JJTTERM);
                   boolean jjtc000 = true;
                   jjtree.openNodeScope(jjtn000);
 /*@egen*/ String t1, t2; Token op; }
@@ -774,15 +630,8 @@ String Term() : {/*@bgen(jjtree) Term */
 /*@egen*/
 }
 
-
-/*
- * Factor - a single unit in an expression
- *
- * Returns the actual value string (variable name or literal).
- * No IR emitted here \u2014 the value is passed up to Expression/Term.
- */
 String Factor() : {/*@bgen(jjtree) Factor */
-                    SimpleNode jjtn000 = new SimpleNode(JJTFACTOR);
+                    ASTFactor jjtn000 = new ASTFactor(JJTFACTOR);
                     boolean jjtc000 = true;
                     jjtree.openNodeScope(jjtn000);
 /*@egen*/ Token t; String res; }
@@ -790,21 +639,17 @@ String Factor() : {/*@bgen(jjtree) Factor */
     try {
 /*@egen*/
     t = <NUMBER>/*@bgen(jjtree)*/
-    {
-      jjtree.closeNodeScope(jjtn000, true);
-      jjtc000 = false;
-    }
-/*@egen*/
-    { return t.image; }
-
+                         {
+                           jjtree.closeNodeScope(jjtn000, true);
+                           jjtc000 = false;
+                         }
+/*@egen*/         { return t.image; }
     | t = <FLOAT_NUMBER>/*@bgen(jjtree)*/
-    {
-      jjtree.closeNodeScope(jjtn000, true);
-      jjtc000 = false;
-    }
-/*@egen*/
-    { return t.image; }
-
+                         {
+                           jjtree.closeNodeScope(jjtn000, true);
+                           jjtc000 = false;
+                         }
+/*@egen*/ { return t.image; }
     | t = <ID>/*@bgen(jjtree)*/
     {
       jjtree.closeNodeScope(jjtn000, true);
@@ -815,30 +660,24 @@ String Factor() : {/*@bgen(jjtree) Factor */
         semanticAnalyzer.checkVariableDeclared(t.image);
         return t.image;
     }
-
     | t = <STRING_LITERAL>/*@bgen(jjtree)*/
-    {
-      jjtree.closeNodeScope(jjtn000, true);
-      jjtc000 = false;
-    }
-/*@egen*/
-    { return t.image; }
-
+                           {
+                             jjtree.closeNodeScope(jjtn000, true);
+                             jjtc000 = false;
+                           }
+/*@egen*/ { return t.image; }
     | t = <CHAR_LITERAL>/*@bgen(jjtree)*/
-    {
-      jjtree.closeNodeScope(jjtn000, true);
-      jjtc000 = false;
-    }
-/*@egen*/
-    { return t.image; }
-
+                           {
+                             jjtree.closeNodeScope(jjtn000, true);
+                             jjtc000 = false;
+                           }
+/*@egen*/   { return t.image; }
     | <LPAREN> res = Expression() <RPAREN>/*@bgen(jjtree)*/
-    {
-      jjtree.closeNodeScope(jjtn000, true);
-      jjtc000 = false;
-    }
-/*@egen*/
-    { return res; }/*@bgen(jjtree)*/
+                                           {
+                                             jjtree.closeNodeScope(jjtn000, true);
+                                             jjtc000 = false;
+                                           }
+/*@egen*/ { return res; }/*@bgen(jjtree)*/
     } catch (Throwable jjte000) {
       if (jjtc000) {
         jjtree.clearNodeScope(jjtn000);

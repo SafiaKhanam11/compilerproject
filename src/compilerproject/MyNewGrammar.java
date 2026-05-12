@@ -33,12 +33,12 @@ public class MyNewGrammar/*@bgen(jjtree)*/implements MyNewGrammarTreeConstants, 
             /* Print original IR */
             parser.irGenerator.printIR();
 
-            /* --- MILESTONE 2: OPTIMIZATION --- */
+            /* Optimization */
             Optimizer optimizer = new Optimizer(parser.irGenerator.getQuadruples());
             optimizer.optimize();
             optimizer.printOptimized();
 
-            /* --- MILESTONE 2: TARGET CODE GENERATION --- */
+            /* Target Code Generation */
             TargetCodeGenerator codeGen = new TargetCodeGenerator(
                 optimizer.getOptimizedInstructions()
             );
@@ -46,23 +46,24 @@ public class MyNewGrammar/*@bgen(jjtree)*/implements MyNewGrammarTreeConstants, 
             codeGen.printAssembly();
 
         } catch (java.io.FileNotFoundException e) {
-            System.out.println("ERROR: File not found - " + e.getMessage());
-        } catch (Exception e) {
-            System.out.println("\nERROR: " + e.getMessage());
-            e.printStackTrace();
-        }
+    System.out.println("ERROR: File not found - " + e.getMessage());
+
+} catch (ParseException e) {
+    System.out.println("\nSYNTAX ERROR:");
+    System.out.println(e.getMessage());
+
+} catch (Exception e) {
+    System.out.println("\nSYSTEM ERROR:");
+    System.out.println(e.getMessage());
+}
     }
 
 /* ============================= */
 /*        GRAMMAR RULES          */
 /* ============================= */
-
-/*
- * Start - Root of the parse tree
- * Returns SimpleNode so main() can call root.dump()
- */
-  final public SimpleNode Start() throws ParseException {/*@bgen(jjtree) Start */
-  SimpleNode jjtn000 = new SimpleNode(JJTSTART);
+  final public 
+SimpleNode Start() throws ParseException {/*@bgen(jjtree) Start */
+  ASTStart jjtn000 = new ASTStart(JJTSTART);
   boolean jjtc000 = true;
   jjtree.openNodeScope(jjtn000);
     try {
@@ -96,11 +97,8 @@ if (jjtc000) {
     throw new Error("Missing return statement in function");
 }
 
-/*
- * VariablesBlock - variables: section
- */
   final public void VariablesBlock() throws ParseException {/*@bgen(jjtree) VariablesBlock */
-  SimpleNode jjtn000 = new SimpleNode(JJTVARIABLESBLOCK);
+  ASTVariablesBlock jjtn000 = new ASTVariablesBlock(JJTVARIABLESBLOCK);
   boolean jjtc000 = true;
   jjtree.openNodeScope(jjtn000);
     try {
@@ -142,14 +140,8 @@ if (jjtc000) {
     }
 }
 
-/*
- * Declaration - single variable declaration
- *
- * FIX: Now emits IR instruction for the declaration.
- * Example IR: (=, 3, , abc)  means  abc = 3
- */
   final public void Declaration() throws ParseException {/*@bgen(jjtree) Declaration */
-                       SimpleNode jjtn000 = new SimpleNode(JJTDECLARATION);
+                       ASTDeclaration jjtn000 = new ASTDeclaration(JJTDECLARATION);
                        boolean jjtc000 = true;
                        jjtree.openNodeScope(jjtn000);Token t; Token id; Token val;
     try {
@@ -202,10 +194,7 @@ if (jjtc000) {
       jj_consume_token(SEMICOLON);
 jjtree.closeNodeScope(jjtn000, true);
       jjtc000 = false;
-/* Register in symbol table via semantic analyser */
-        semanticAnalyzer.declareVariable(id.image, t.image, val.image);
-
-        /* FIX: Emit IR for declaration - was missing before */
+semanticAnalyzer.declareVariable(id.image, t.image, val.image);
         irGenerator.emit("=", val.image, "", id.image);
     } finally {
 if (jjtc000) {
@@ -214,11 +203,8 @@ if (jjtc000) {
     }
 }
 
-/*
- * CodeBlock - code: section
- */
   final public void CodeBlock() throws ParseException {/*@bgen(jjtree) CodeBlock */
-  SimpleNode jjtn000 = new SimpleNode(JJTCODEBLOCK);
+  ASTCodeBlock jjtn000 = new ASTCodeBlock(JJTCODEBLOCK);
   boolean jjtc000 = true;
   jjtree.openNodeScope(jjtn000);
     try {
@@ -226,13 +212,9 @@ if (jjtc000) {
       label_2:
       while (true) {
         switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
+        case LOOPIF:
         case SWITCHFOR:
         case OUTSTRING:
-        case LPAREN:
-        case FLOAT_NUMBER:
-        case NUMBER:
-        case STRING_LITERAL:
-        case CHAR_LITERAL:
         case ID:{
           ;
           break;
@@ -265,52 +247,27 @@ if (jjtc000) {
 }
 
 /*
- * Statement - routes to correct statement type
+ * FIX 1: #void prevents JJTree from creating a node for Statement.
+ * Without #void, JJTree wraps the alternatives in a node object
+ * which breaks the choice between LoopIf/SwitchFor/Assignment.
  */
-  final public void Statement() throws ParseException {/*@bgen(jjtree) Statement */
-  SimpleNode jjtn000 = new SimpleNode(JJTSTATEMENT);
-  boolean jjtc000 = true;
-  jjtree.openNodeScope(jjtn000);
-    try {
-      if (jj_2_1(2147483647)) {
-        Assignment();
-      } else if (jj_2_2(2147483647)) {
-        LoopIf();
-      } else if (jj_2_3(2147483647)) {
-        SwitchFor();
-      } else if (jj_2_4(2147483647)) {
-        OutString();
-      } else {
-        jj_consume_token(-1);
-        throw new ParseException();
-      }
-    } catch (Throwable jjte000) {
-if (jjtc000) {
-        jjtree.clearNodeScope(jjtn000);
-        jjtc000 = false;
-      } else {
-        jjtree.popNode();
-      }
-      if (jjte000 instanceof RuntimeException) {
-        {if (true) throw (RuntimeException)jjte000;}
-      }
-      if (jjte000 instanceof ParseException) {
-        {if (true) throw (ParseException)jjte000;}
-      }
-      {if (true) throw (Error)jjte000;}
-    } finally {
-if (jjtc000) {
-        jjtree.closeNodeScope(jjtn000, true);
-      }
+  final public void Statement() throws ParseException {
+    if (jj_2_1(2147483647)) {
+      Assignment();
+    } else if (jj_2_2(2147483647)) {
+      LoopIf();
+    } else if (jj_2_3(2147483647)) {
+      SwitchFor();
+    } else if (jj_2_4(2147483647)) {
+      OutString();
+    } else {
+      jj_consume_token(-1);
+      throw new ParseException();
     }
 }
 
-/*
- * Assignment - variable = expression
- * IR: emits (=, exprResult, , varName)
- */
   final public void Assignment() throws ParseException {/*@bgen(jjtree) Assignment */
-                      SimpleNode jjtn000 = new SimpleNode(JJTASSIGNMENT);
+                      ASTAssignment jjtn000 = new ASTAssignment(JJTASSIGNMENT);
                       boolean jjtc000 = true;
                       jjtree.openNodeScope(jjtn000);Token id; String exprResult;
     try {
@@ -343,14 +300,8 @@ if (jjtc000) {
     }
 }
 
-/*
- * OutString - outString(expr) or outString("string")
- *
- * FIX: Expression() return value was being discarded before.
- * Now captured and emitted as a PRINT instruction.
- */
   final public void OutString() throws ParseException {/*@bgen(jjtree) OutString */
-                     SimpleNode jjtn000 = new SimpleNode(JJTOUTSTRING);
+                     ASTOutString jjtn000 = new ASTOutString(JJTOUTSTRING);
                      boolean jjtc000 = true;
                      jjtree.openNodeScope(jjtn000);String res; Token t;
     try {
@@ -396,30 +347,21 @@ if (jjtc000) {
 }
 
 /*
- * LoopIf - loopif condition holds ... endloop
- *
- * FIX: Now generates proper loop IR with labels and goto.
- *
- * IR generated:
- *   label  L1             <- loop start label
- *   <op>   left  right  t1  <- condition evaluation
- *   ifFalse t1    L1_end  <- exit loop if condition false
- *   ... body statements ...
- *   goto   L1             <- jump back to start
- *   label  L1_end         <- loop end label
+ * FIX 2: LoopIf now uses irGenerator.newLabel() instead of newTemp()
+ * so loop labels (L1, L2) never clash with temp variables (t1, t2).
+ * This was causing the label collision bug.
  */
   final public void LoopIf() throws ParseException {/*@bgen(jjtree) LoopIf */
-                  SimpleNode jjtn000 = new SimpleNode(JJTLOOPIF);
+                  ASTLoopIf jjtn000 = new ASTLoopIf(JJTLOOPIF);
                   boolean jjtc000 = true;
                   jjtree.openNodeScope(jjtn000);String condResult; String loopLabel; String endLabel;
     try {
-/* Generate loop labels BEFORE parsing condition */
-        loopLabel = "L" + irGenerator.newTemp();
+      jj_consume_token(LOOPIF);
+loopLabel = irGenerator.newLabel();
         endLabel  = loopLabel + "_end";
         irGenerator.emit("label", loopLabel, "", "");
       condResult = Condition();
-/* If condition is false, jump to end of loop */
-        irGenerator.emit("ifFalse", condResult, "", endLabel);
+irGenerator.emit("ifFalse", condResult, "", endLabel);
       jj_consume_token(HOLDS);
       label_3:
       while (true) {
@@ -438,8 +380,7 @@ if (jjtc000) {
       jj_consume_token(ENDLOOP);
 jjtree.closeNodeScope(jjtn000, true);
       jjtc000 = false;
-/* Jump back to loop start to recheck condition */
-        irGenerator.emit("goto", "", "", loopLabel);
+irGenerator.emit("goto", "", "", loopLabel);
         irGenerator.emit("label", endLabel, "", "");
     } catch (Throwable jjte000) {
 if (jjtc000) {
@@ -463,62 +404,30 @@ if (jjtc000) {
 }
 
 /*
- * LoopIfBody - only Assignment and OutString inside loop
- * Enforces no-nesting rule from PDF
+ * FIX 3: #void on LoopIfBody so JJTree does not wrap
+ * body statements in an extra node — they go directly under LoopIf.
  */
-  final public void LoopIfBody() throws ParseException {/*@bgen(jjtree) LoopIfBody */
-  SimpleNode jjtn000 = new SimpleNode(JJTLOOPIFBODY);
-  boolean jjtc000 = true;
-  jjtree.openNodeScope(jjtn000);
-    try {
-      if (jj_2_6(2)) {
-        Assignment();
-      } else {
-        switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
-        case OUTSTRING:{
-          OutString();
-          break;
-          }
-        default:
-          jj_la1[6] = jj_gen;
-          jj_consume_token(-1);
-          throw new ParseException();
+  final public void LoopIfBody() throws ParseException {
+    if (jj_2_6(2)) {
+      Assignment();
+    } else {
+      switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
+      case OUTSTRING:{
+        OutString();
+        break;
         }
-      }
-    } catch (Throwable jjte000) {
-if (jjtc000) {
-        jjtree.clearNodeScope(jjtn000);
-        jjtc000 = false;
-      } else {
-        jjtree.popNode();
-      }
-      if (jjte000 instanceof RuntimeException) {
-        {if (true) throw (RuntimeException)jjte000;}
-      }
-      if (jjte000 instanceof ParseException) {
-        {if (true) throw (ParseException)jjte000;}
-      }
-      {if (true) throw (Error)jjte000;}
-    } finally {
-if (jjtc000) {
-        jjtree.closeNodeScope(jjtn000, true);
+      default:
+        jj_la1[6] = jj_gen;
+        jj_consume_token(-1);
+        throw new ParseException();
       }
     }
 }
 
-/*
- * SwitchFor - switchFor(var) case ... other ... endswitchFor
- *
- * IR generated:
- *   switch  varName
- *   case    value
- *   ... assignment ...
- *   endswitch
- */
   final public void SwitchFor() throws ParseException {/*@bgen(jjtree) SwitchFor */
-                     SimpleNode jjtn000 = new SimpleNode(JJTSWITCHFOR);
+                     ASTSwitchFor jjtn000 = new ASTSwitchFor(JJTSWITCHFOR);
                      boolean jjtc000 = true;
-                     jjtree.openNodeScope(jjtn000);Token id;
+                     jjtree.openNodeScope(jjtn000);Token id; Token caseVal;
     try {
       jj_consume_token(SWITCHFOR);
       jj_consume_token(LPAREN);
@@ -531,19 +440,19 @@ irGenerator.emit("switch", id.image, "", "");
         jj_consume_token(CASE);
         switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
         case NUMBER:{
-          jj_consume_token(NUMBER);
+          caseVal = jj_consume_token(NUMBER);
           break;
           }
         case FLOAT_NUMBER:{
-          jj_consume_token(FLOAT_NUMBER);
+          caseVal = jj_consume_token(FLOAT_NUMBER);
           break;
           }
         case STRING_LITERAL:{
-          jj_consume_token(STRING_LITERAL);
+          caseVal = jj_consume_token(STRING_LITERAL);
           break;
           }
         case CHAR_LITERAL:{
-          jj_consume_token(CHAR_LITERAL);
+          caseVal = jj_consume_token(CHAR_LITERAL);
           break;
           }
         default:
@@ -552,6 +461,7 @@ irGenerator.emit("switch", id.image, "", "");
           throw new ParseException();
         }
         jj_consume_token(COLON);
+irGenerator.emit("case", caseVal.image, "", "");
         SwitchBody();
         switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
         case CASE:{
@@ -565,6 +475,7 @@ irGenerator.emit("switch", id.image, "", "");
       }
       jj_consume_token(OTHER);
       jj_consume_token(COLON);
+irGenerator.emit("other", "", "", "");
       SwitchBody();
       jj_consume_token(ENDSWITCH);
 jjtree.closeNodeScope(jjtn000, true);
@@ -592,74 +503,40 @@ if (jjtc000) {
 }
 
 /*
- * SwitchBody - statements inside a case or other branch
- * No nesting allowed
+ * FIX 4: #void on SwitchBody for same reason as LoopIfBody.
  */
-  final public void SwitchBody() throws ParseException {/*@bgen(jjtree) SwitchBody */
-  SimpleNode jjtn000 = new SimpleNode(JJTSWITCHBODY);
-  boolean jjtc000 = true;
-  jjtree.openNodeScope(jjtn000);
-    try {
-      label_5:
-      while (true) {
-        if (jj_2_7(2)) {
-          Assignment();
-        } else {
-          switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
-          case OUTSTRING:{
-            OutString();
-            break;
-            }
-          default:
-            jj_la1[9] = jj_gen;
-            jj_consume_token(-1);
-            throw new ParseException();
-          }
-        }
+  final public void SwitchBody() throws ParseException {
+    label_5:
+    while (true) {
+      if (jj_2_7(2)) {
+        Assignment();
+      } else {
         switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
-        case OUTSTRING:
-        case ID:{
-          ;
+        case OUTSTRING:{
+          OutString();
           break;
           }
         default:
-          jj_la1[10] = jj_gen;
-          break label_5;
+          jj_la1[9] = jj_gen;
+          jj_consume_token(-1);
+          throw new ParseException();
         }
       }
-    } catch (Throwable jjte000) {
-if (jjtc000) {
-        jjtree.clearNodeScope(jjtn000);
-        jjtc000 = false;
-      } else {
-        jjtree.popNode();
-      }
-      if (jjte000 instanceof RuntimeException) {
-        {if (true) throw (RuntimeException)jjte000;}
-      }
-      if (jjte000 instanceof ParseException) {
-        {if (true) throw (ParseException)jjte000;}
-      }
-      {if (true) throw (Error)jjte000;}
-    } finally {
-if (jjtc000) {
-        jjtree.closeNodeScope(jjtn000, true);
+      switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
+      case OUTSTRING:
+      case ID:{
+        ;
+        break;
+        }
+      default:
+        jj_la1[10] = jj_gen;
+        break label_5;
       }
     }
 }
 
-/*
- * Condition - conditional expression used in loopif
- *
- * FIX: Now captures both Expression() results and the operator.
- * Emits a comparison IR instruction.
- * Returns the temp variable holding the boolean result.
- *
- * IR example for "num > 0":
- *   (>, num, 0, t1)
- */
   final public String Condition() throws ParseException {/*@bgen(jjtree) Condition */
-                       SimpleNode jjtn000 = new SimpleNode(JJTCONDITION);
+                       ASTCondition jjtn000 = new ASTCondition(JJTCONDITION);
                        boolean jjtc000 = true;
                        jjtree.openNodeScope(jjtn000);String left, right; Token op; String res;
     try {
@@ -722,15 +599,8 @@ if (jjtc000) {
     throw new Error("Missing return statement in function");
 }
 
-/*
- * Expression - addition and subtraction (lowest precedence)
- *
- * Returns the temp variable or operand holding the result.
- * IR example for "abc + xyz":
- *   (+, abc, xyz, t1)
- */
   final public String Expression() throws ParseException {/*@bgen(jjtree) Expression */
-                        SimpleNode jjtn000 = new SimpleNode(JJTEXPRESSION);
+                        ASTExpression jjtn000 = new ASTExpression(JJTEXPRESSION);
                         boolean jjtc000 = true;
                         jjtree.openNodeScope(jjtn000);String t1, t2; Token op;
     try {
@@ -791,15 +661,8 @@ if (jjtc000) {
     throw new Error("Missing return statement in function");
 }
 
-/*
- * Term - multiplication and division (higher precedence)
- *
- * Returns the temp variable or operand holding the result.
- * IR example for "fact * num":
- *   (*, fact, num, t1)
- */
   final public String Term() throws ParseException {/*@bgen(jjtree) Term */
-                  SimpleNode jjtn000 = new SimpleNode(JJTTERM);
+                  ASTTerm jjtn000 = new ASTTerm(JJTTERM);
                   boolean jjtc000 = true;
                   jjtree.openNodeScope(jjtn000);String t1, t2; Token op;
     try {
@@ -860,14 +723,8 @@ if (jjtc000) {
     throw new Error("Missing return statement in function");
 }
 
-/*
- * Factor - a single unit in an expression
- *
- * Returns the actual value string (variable name or literal).
- * No IR emitted here — the value is passed up to Expression/Term.
- */
   final public String Factor() throws ParseException {/*@bgen(jjtree) Factor */
-                    SimpleNode jjtn000 = new SimpleNode(JJTFACTOR);
+                    ASTFactor jjtn000 = new ASTFactor(JJTFACTOR);
                     boolean jjtc000 = true;
                     jjtree.openNodeScope(jjtn000);Token t; String res;
     try {
@@ -875,14 +732,14 @@ if (jjtc000) {
       case NUMBER:{
         t = jj_consume_token(NUMBER);
 jjtree.closeNodeScope(jjtn000, true);
-      jjtc000 = false;
+                           jjtc000 = false;
 {if ("" != null) return t.image;}
         break;
         }
       case FLOAT_NUMBER:{
         t = jj_consume_token(FLOAT_NUMBER);
 jjtree.closeNodeScope(jjtn000, true);
-      jjtc000 = false;
+                           jjtc000 = false;
 {if ("" != null) return t.image;}
         break;
         }
@@ -897,14 +754,14 @@ semanticAnalyzer.checkVariableDeclared(t.image);
       case STRING_LITERAL:{
         t = jj_consume_token(STRING_LITERAL);
 jjtree.closeNodeScope(jjtn000, true);
-      jjtc000 = false;
+                             jjtc000 = false;
 {if ("" != null) return t.image;}
         break;
         }
       case CHAR_LITERAL:{
         t = jj_consume_token(CHAR_LITERAL);
 jjtree.closeNodeScope(jjtn000, true);
-      jjtc000 = false;
+                             jjtc000 = false;
 {if ("" != null) return t.image;}
         break;
         }
@@ -913,7 +770,7 @@ jjtree.closeNodeScope(jjtn000, true);
         res = Expression();
         jj_consume_token(RPAREN);
 jjtree.closeNodeScope(jjtn000, true);
-      jjtc000 = false;
+                                             jjtc000 = false;
 {if ("" != null) return res;}
         break;
         }
@@ -1000,55 +857,101 @@ if (jjtc000) {
     finally { jj_save(6, xla); }
   }
 
-  private boolean jj_3R_Term_370_5_10()
+  private boolean jj_3_3()
  {
-    if (jj_3R_Factor_392_5_12()) return true;
-    Token xsp;
-    while (true) {
-      xsp = jj_scanpos;
-      if (jj_3R_Term_372_9_13()) { jj_scanpos = xsp; break; }
-    }
+    if (jj_scan_token(SWITCHFOR)) return true;
     return false;
   }
 
-  private boolean jj_3R_Factor_410_7_19()
+  private boolean jj_3R_Factor_321_7_16()
  {
-    if (jj_scan_token(LPAREN)) return true;
-    if (jj_3R_Expression_347_5_8()) return true;
+    if (jj_scan_token(ID)) return true;
     return false;
   }
 
-  private boolean jj_3_6()
+  private boolean jj_3_2()
  {
-    if (jj_3R_Assignment_194_5_9()) return true;
+    if (jj_scan_token(LOOPIF)) return true;
     return false;
   }
 
-  private boolean jj_3R_Factor_407_7_18()
+  private boolean jj_3R_Factor_320_7_15()
  {
-    if (jj_scan_token(CHAR_LITERAL)) return true;
+    if (jj_scan_token(FLOAT_NUMBER)) return true;
     return false;
   }
 
-  private boolean jj_3_5()
+  private boolean jj_3_1()
  {
-    if (jj_3R_Expression_347_5_8()) return true;
+    if (jj_scan_token(ID)) return true;
     return false;
   }
 
   private boolean jj_3_7()
  {
-    if (jj_3R_Assignment_194_5_9()) return true;
+    if (jj_3R_Assignment_175_5_9()) return true;
     return false;
   }
 
-  private boolean jj_3R_Factor_404_7_17()
+  private boolean jj_3R_Factor_319_5_12()
  {
-    if (jj_scan_token(STRING_LITERAL)) return true;
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_Factor_319_5_14()) {
+    jj_scanpos = xsp;
+    if (jj_3R_Factor_320_7_15()) {
+    jj_scanpos = xsp;
+    if (jj_3R_Factor_321_7_16()) {
+    jj_scanpos = xsp;
+    if (jj_3R_Factor_326_7_17()) {
+    jj_scanpos = xsp;
+    if (jj_3R_Factor_327_7_18()) {
+    jj_scanpos = xsp;
+    if (jj_3R_Factor_328_7_19()) return true;
+    }
+    }
+    }
+    }
+    }
     return false;
   }
 
-  private boolean jj_3R_Expression_349_9_11()
+  private boolean jj_3R_Factor_319_5_14()
+ {
+    if (jj_scan_token(NUMBER)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_Assignment_175_5_9()
+ {
+    if (jj_scan_token(ID)) return true;
+    if (jj_scan_token(ASSIGN)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_Term_306_9_13()
+ {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_scan_token(27)) {
+    jj_scanpos = xsp;
+    if (jj_scan_token(28)) return true;
+    }
+    return false;
+  }
+
+  private boolean jj_3R_Term_304_5_10()
+ {
+    if (jj_3R_Factor_319_5_12()) return true;
+    Token xsp;
+    while (true) {
+      xsp = jj_scanpos;
+      if (jj_3R_Term_306_9_13()) { jj_scanpos = xsp; break; }
+    }
+    return false;
+  }
+
+  private boolean jj_3R_Expression_291_9_11()
  {
     Token xsp;
     xsp = jj_scanpos;
@@ -1059,98 +962,51 @@ if (jjtc000) {
     return false;
   }
 
-  private boolean jj_3R_Factor_398_7_16()
+  private boolean jj_3R_Expression_289_5_8()
  {
-    if (jj_scan_token(ID)) return true;
-    return false;
-  }
-
-  private boolean jj_3R_Factor_395_7_15()
- {
-    if (jj_scan_token(FLOAT_NUMBER)) return true;
-    return false;
-  }
-
-  private boolean jj_3R_Expression_347_5_8()
- {
-    if (jj_3R_Term_370_5_10()) return true;
+    if (jj_3R_Term_304_5_10()) return true;
     Token xsp;
     while (true) {
       xsp = jj_scanpos;
-      if (jj_3R_Expression_349_9_11()) { jj_scanpos = xsp; break; }
+      if (jj_3R_Expression_291_9_11()) { jj_scanpos = xsp; break; }
     }
     return false;
   }
 
-  private boolean jj_3R_Factor_392_5_12()
+  private boolean jj_3_5()
  {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_Factor_392_5_14()) {
-    jj_scanpos = xsp;
-    if (jj_3R_Factor_395_7_15()) {
-    jj_scanpos = xsp;
-    if (jj_3R_Factor_398_7_16()) {
-    jj_scanpos = xsp;
-    if (jj_3R_Factor_404_7_17()) {
-    jj_scanpos = xsp;
-    if (jj_3R_Factor_407_7_18()) {
-    jj_scanpos = xsp;
-    if (jj_3R_Factor_410_7_19()) return true;
-    }
-    }
-    }
-    }
-    }
+    if (jj_3R_Expression_289_5_8()) return true;
     return false;
   }
 
-  private boolean jj_3R_Factor_392_5_14()
+  private boolean jj_3_6()
  {
-    if (jj_scan_token(NUMBER)) return true;
+    if (jj_3R_Assignment_175_5_9()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_Factor_328_7_19()
+ {
+    if (jj_scan_token(LPAREN)) return true;
+    if (jj_3R_Expression_289_5_8()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_Factor_327_7_18()
+ {
+    if (jj_scan_token(CHAR_LITERAL)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_Factor_326_7_17()
+ {
+    if (jj_scan_token(STRING_LITERAL)) return true;
     return false;
   }
 
   private boolean jj_3_4()
  {
     if (jj_scan_token(OUTSTRING)) return true;
-    return false;
-  }
-
-  private boolean jj_3_3()
- {
-    if (jj_scan_token(SWITCHFOR)) return true;
-    return false;
-  }
-
-  private boolean jj_3_2()
- {
-    if (jj_scan_token(LOOPIF)) return true;
-    return false;
-  }
-
-  private boolean jj_3R_Assignment_194_5_9()
- {
-    if (jj_scan_token(ID)) return true;
-    if (jj_scan_token(ASSIGN)) return true;
-    return false;
-  }
-
-  private boolean jj_3_1()
- {
-    if (jj_scan_token(ID)) return true;
-    if (jj_scan_token(ASSIGN)) return true;
-    return false;
-  }
-
-  private boolean jj_3R_Term_372_9_13()
- {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_scan_token(27)) {
-    jj_scanpos = xsp;
-    if (jj_scan_token(28)) return true;
-    }
     return false;
   }
 
@@ -1173,10 +1029,10 @@ if (jjtc000) {
 	   jj_la1_init_1();
 	}
 	private static void jj_la1_init_0() {
-	   jj_la1_0 = new int[] {0x1e00,0x1e00,0x0,0x910000,0x0,0x100000,0x100000,0x0,0x40000,0x100000,0x100000,0xe0000000,0x6000000,0x6000000,0x18000000,0x18000000,0x800000,};
+	   jj_la1_0 = new int[] {0x1e00,0x1e00,0x0,0x112000,0x0,0x100000,0x100000,0x0,0x40000,0x100000,0x100000,0xe0000000,0x6000000,0x6000000,0x18000000,0x18000000,0x800000,};
 	}
 	private static void jj_la1_init_1() {
-	   jj_la1_1 = new int[] {0x0,0x0,0xf0,0x1f0,0x40,0x100,0x0,0xf0,0x0,0x0,0x100,0x7,0x0,0x0,0x0,0x0,0x1f0,};
+	   jj_la1_1 = new int[] {0x0,0x0,0xf0,0x100,0x40,0x100,0x0,0xf0,0x0,0x0,0x100,0x7,0x0,0x0,0x0,0x0,0x1f0,};
 	}
   final private JJCalls[] jj_2_rtns = new JJCalls[7];
   private boolean jj_rescan = false;
